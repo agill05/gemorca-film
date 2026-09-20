@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gemorca Film - Nonton Film Online</title>
+  <meta name="description" content="Gemorca Film: tonton film pilihan langsung dari browser, di HP maupun laptop.">
+  <meta name="theme-color" content="#0f1013">
+  <meta property="og:title" content="Gemorca Film">
+  <meta property="og:description" content="Tonton film pilihan langsung dari browser, di HP maupun laptop.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23d62839'/%3E%3Cpath d='M12 9l11 7-11 7z' fill='white'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
+      <a href="#top" class="logo" data-home aria-label="Gemorca Film, ke beranda">
+        <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor"/>
+          <path d="M12 9l11 7-11 7z" fill="#fff"/>
+        </svg>
+        <span>Gemorca <em>Film</em></span>
+      </a>
+
+      <nav class="nav" aria-label="Navigasi utama">
+        <a href="#top" class="nav-link" data-home>Beranda</a>
+        <a href="#film" class="nav-link">Film</a>
+        <a href="#genre" class="nav-link" id="navGenre">Genre</a>
+      </nav>
+
+      <div class="search" role="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+        </svg>
+        <input type="search" id="searchInput" placeholder="Cari judul atau genre" aria-label="Cari film" autocomplete="off">
+      </div>
+    </div>
+  </header>
+
+  <section class="hero" id="top" aria-label="Film unggulan">
+    <div class="hero-bg" id="heroBg"></div>
+    <div class="container">
+      <div class="hero-inner">
+        <h1 class="hero-title" id="heroTitle"></h1>
+        <p class="hero-meta" id="heroMeta"></p>
+        <p class="hero-desc" id="heroDesc"></p>
+        <div class="hero-actions">
+          <button type="button" class="btn btn-primary" id="heroPlay">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            Nonton
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section" id="film">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="sectionTitle">Semua Film</h2>
+          <span class="count" id="resultCount"></span>
+        </div>
+
+        <div class="chips" id="genre" role="group" aria-label="Filter genre"></div>
+
+        <div class="grid" id="movieGrid"></div>
+
+        <div class="empty" id="emptyState" hidden>
+          <p class="empty-title" id="emptyTitle">Film tidak ditemukan</p>
+          <p id="emptyText">Coba kata kunci lain atau pilih genre berbeda.</p>
+          <button type="button" class="btn btn-ghost" id="resetFilter">Tampilkan semua film</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; <span id="year"></span> Gemorca Film. Hak cipta setiap film milik pemiliknya masing-masing.</p>
+    </div>
+  </footer>
+
+  <div class="modal" id="playerModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box">
+      <div class="modal-bar">
+        <h3 id="modalTitle"></h3>
+        <button type="button" class="modal-close" id="modalClose" aria-label="Tutup pemutar video">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="player-wrap" id="playerWrap">
+        <div class="player">
+          <div class="player-host" id="playerHost"></div>
+          <button type="button" class="player-surface" id="playerSurface" aria-label="Putar atau jeda video">
+            <span class="surface-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </span>
+          </button>
+          <div class="player-cover" id="playerCover" hidden>
+            <button type="button" class="cover-button" id="coverButton" aria-label="Putar video">
+              <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              <svg class="icon-replay" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+            </button>
+            <span class="cover-spinner" aria-hidden="true"></span>
+          </div>
+          <div class="player-error" id="playerError" role="alert" hidden></div>
+        </div>
+        <div class="controls" id="playerControls" hidden>
+          <button type="button" class="ctrl" id="btnPlay" aria-label="Putar">
+            <svg class="i-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+          </button>
+          <input type="range" class="seek" id="seekBar" min="0" max="1000" value="0" aria-label="Posisi video">
+          <span class="time" id="timeLabel">0:00 / 0:00</span>
+          <button type="button" class="ctrl" id="btnMute" aria-label="Bisukan">
+            <svg class="i-vol" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            <svg class="i-muted" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+          </button>
+          <input type="range" class="volume" id="volumeBar" min="0" max="100" value="100" aria-label="Volume">
+          <button type="button" class="ctrl" id="btnFullscreen" aria-label="Layar penuh">
+            <svg class="i-fs-on" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            <svg class="i-fs-off" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="modal-info">
+        <p class="modal-meta" id="modalMeta"></p>
+        <p class="modal-desc" id="modalDesc"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
