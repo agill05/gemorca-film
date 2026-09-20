@@ -468,6 +468,8 @@ body.no-hero .catalog { padding-top: calc(var(--header-h) + 40px); }
   padding: 24px;
 }
 
+.modal[hidden] { display: none; }
+
 .modal-backdrop {
   position: absolute;
   inset: 0;
