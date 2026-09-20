@@ -691,12 +691,47 @@ let FILMS = [];
     return blocker;
   }
 
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  }
+
+  function showDriveRedirect(rawUrl) {
+    controls.hidden = true;
+    playerSurface.hidden = true;
+    playerCover.hidden = true;
+    playerError.hidden = true;
+    playerHost.textContent = "";
+
+    const wrap = makeEl("div", "player-external");
+    wrap.appendChild(makeEl("p", "player-external-text", "Video ini diputar lewat Google Drive."));
+    const link = document.createElement("a");
+    link.className = "btn btn-primary";
+    link.href = rawUrl;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "Buka video";
+    wrap.appendChild(link);
+    playerHost.appendChild(wrap);
+
+    const opened = window.open(rawUrl, "_blank", "noopener");
+    if (opened) {
+      wrap.querySelector(".player-external-text").textContent =
+        "Video dibuka di tab baru lewat Google Drive.";
+    }
+  }
+
   function startFallback(film) {
     const src = buildEmbedUrl(film.videoEmbedUrl);
     if (!src) {
       showPlayerError("Link video tidak valid. Periksa kolom video di Google Sheet.");
       return;
     }
+
+    if (isMobileDevice()) {
+      showDriveRedirect(film.videoEmbedUrl);
+      return;
+    }
+
     controls.hidden = true;
     playerSurface.hidden = true;
     playerCover.hidden = true;
