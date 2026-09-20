@@ -682,6 +682,17 @@ button { font: inherit; }
   to { transform: rotate(360deg); }
 }
 
+.player-shield {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 5;
+  height: clamp(2.5rem, 8vw, 3.25rem);
+  background: linear-gradient(to bottom, rgba(15, 16, 19, 0.94), rgba(15, 16, 19, 0.55));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: auto;
+  cursor: default;
+}
+
 .player-error {
   position: absolute;
   inset: 0;
@@ -707,8 +718,8 @@ button { font: inherit; }
   flex: none;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -803,6 +814,15 @@ button { font: inherit; }
 @media (max-width: 559px) {
   .volume { display: none; }
   .controls { gap: 0.25rem; padding: 0.3rem 0.5rem; }
+}
+
+@media (min-width: 1024px) {
+  .modal-box { width: min(100%, 72rem); }
+}
+
+@media (min-width: 1440px) {
+  .container { max-width: 1440px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2rem 1.5rem; }
 }
 
 .modal-info { padding: 1rem 1.25rem 1.5rem; }

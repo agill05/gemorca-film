@@ -595,6 +595,13 @@ let FILMS = [];
     btnPlay.setAttribute("aria-label", "Putar");
   }
 
+  function buildDriveShield() {
+    const shield = makeEl("div", "player-shield");
+    shield.setAttribute("aria-hidden", "true");
+    shield.addEventListener("contextmenu", (e) => e.preventDefault());
+    return shield;
+  }
+
   function startFallback(film) {
     const src = buildEmbedUrl(film.videoEmbedUrl);
     if (!src) {
@@ -603,7 +610,9 @@ let FILMS = [];
     }
     controls.hidden = true;
     playerSurface.hidden = true;
-    playerCover.hidden = true;
+    setCoverImage(film);
+    setCover("loading");
+
     const iframe = document.createElement("iframe");
     iframe.src = src;
     iframe.title = "Pemutar video: " + film.judul;
@@ -611,7 +620,18 @@ let FILMS = [];
       "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
     iframe.allowFullscreen = true;
     iframe.referrerPolicy = "strict-origin-when-cross-origin";
+
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      setCover("hidden");
+    };
+    iframe.addEventListener("load", reveal);
+    setTimeout(reveal, 8000);
+
     playerHost.appendChild(iframe);
+    playerHost.appendChild(buildDriveShield());
   }
 
   function onPlayerReady(session) {
