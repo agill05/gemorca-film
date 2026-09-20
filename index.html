@@ -3,85 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gemorca Film — Nonton Film Online</title>
+  <title>Gemorca Film - Nonton Film Online</title>
   <meta name="description" content="Gemorca Film: tonton film pilihan langsung dari browser, di HP maupun laptop.">
-  <meta name="theme-color" content="#141010">
+  <meta name="theme-color" content="#0f1013">
   <meta property="og:title" content="Gemorca Film">
   <meta property="og:description" content="Tonton film pilihan langsung dari browser, di HP maupun laptop.">
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e2482f'/%3E%3Cpath d='M12 9l11 7-11 7z' fill='white'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23d62839'/%3E%3Cpath d='M12 9l11 7-11 7z' fill='white'/%3E%3C/svg%3E">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="no-hero">
+<body>
 
-  <header class="header" id="header">
-    <div class="wrap header-inner">
-      <a href="#top" class="brand" data-home aria-label="Gemorca Film, ke beranda">
-        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-          <rect width="32" height="32" rx="9" fill="currentColor"/>
-          <path d="M12.5 9.5l10 6.5-10 6.5z" fill="var(--bg)"/>
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
+      <a href="#top" class="logo" data-home aria-label="Gemorca Film, ke beranda">
+        <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor"/>
+          <path d="M12 9l11 7-11 7z" fill="#fff"/>
         </svg>
-        <span class="brand-name">Gemorca <em>Film</em></span>
+        <span>Gemorca <em>Film</em></span>
       </a>
 
       <nav class="nav" aria-label="Navigasi utama">
         <a href="#top" class="nav-link" data-home>Beranda</a>
-        <a href="#katalog" class="nav-link">Film</a>
-        <a href="#genre-filter" class="nav-link" id="navGenre" hidden>Genre</a>
+        <a href="#film" class="nav-link">Film</a>
+        <a href="#genre" class="nav-link" id="navGenre">Genre</a>
       </nav>
 
-      <label class="search" role="search">
+      <div class="search" role="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
         </svg>
         <input type="search" id="searchInput" placeholder="Cari judul atau genre" aria-label="Cari film" autocomplete="off">
-      </label>
+      </div>
     </div>
   </header>
 
-  <section class="hero" id="top" aria-label="Film unggulan" hidden>
-    <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
-    <div class="hero-scrim" aria-hidden="true"></div>
-    <div class="wrap hero-inner">
-      <p class="hero-eyebrow" id="heroYear"></p>
-      <h1 class="hero-title" id="heroTitle"></h1>
-      <div class="hero-tags" id="heroTags"></div>
-      <p class="hero-desc" id="heroDesc"></p>
-      <button type="button" class="btn btn-ticket" id="heroPlay">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-        <span class="btn-ticket-divider" aria-hidden="true"></span>
-        Putar sekarang
-      </button>
+  <section class="hero" id="top" aria-label="Film unggulan">
+    <div class="hero-bg" id="heroBg"></div>
+    <div class="container">
+      <div class="hero-inner">
+        <h1 class="hero-title" id="heroTitle"></h1>
+        <p class="hero-meta" id="heroMeta"></p>
+        <p class="hero-desc" id="heroDesc"></p>
+        <div class="hero-actions">
+          <button type="button" class="btn btn-primary" id="heroPlay">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            Nonton
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 
   <main>
-    <section class="catalog" id="katalog">
-      <div class="wrap">
-        <div class="catalog-head">
-          <h2 id="catalogTitle">Semua Film</h2>
+    <section class="section" id="film">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="sectionTitle">Semua Film</h2>
           <span class="count" id="resultCount"></span>
         </div>
 
-        <div class="chips" id="genre-filter" role="group" aria-label="Filter genre"></div>
+        <div class="chips" id="genre" role="group" aria-label="Filter genre"></div>
 
         <div class="grid" id="movieGrid"></div>
 
         <div class="empty" id="emptyState" hidden>
           <p class="empty-title" id="emptyTitle">Film tidak ditemukan</p>
-          <p class="empty-text" id="emptyText">Coba kata kunci lain atau pilih genre berbeda.</p>
-          <button type="button" class="btn btn-outline" id="resetFilter">Tampilkan semua film</button>
+          <p id="emptyText">Coba kata kunci lain atau pilih genre berbeda.</p>
+          <button type="button" class="btn btn-ghost" id="resetFilter">Tampilkan semua film</button>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="wrap">
+  <footer class="site-footer">
+    <div class="container">
       <p>&copy; <span id="year"></span> Gemorca Film. Hak cipta setiap film milik pemiliknya masing-masing.</p>
     </div>
   </footer>
@@ -89,27 +90,31 @@
   <div class="modal" id="playerModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
     <div class="modal-backdrop" data-close></div>
     <div class="modal-box">
-      <div class="player" id="player">
-        <div class="player-host" id="playerHost"></div>
-
-        <button type="button" class="player-surface" id="playerSurface" aria-label="Putar atau jeda video"></button>
-
-        <div class="player-cover" id="playerCover" hidden>
-          <span class="cover-spinner" aria-hidden="true"></span>
-          <button type="button" class="cover-button" id="coverButton" aria-label="Putar video">
-            <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-            <svg class="icon-replay" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
-          </button>
-        </div>
-
-        <div class="player-error" id="playerError" role="alert" hidden></div>
-
+      <div class="modal-bar">
+        <h3 id="modalTitle"></h3>
         <button type="button" class="modal-close" id="modalClose" aria-label="Tutup pemutar video">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18"/>
           </svg>
         </button>
-
+      </div>
+      <div class="player-wrap" id="playerWrap">
+        <div class="player">
+          <div class="player-host" id="playerHost"></div>
+          <button type="button" class="player-surface" id="playerSurface" aria-label="Putar atau jeda video">
+            <span class="surface-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            </span>
+          </button>
+          <div class="player-cover" id="playerCover" hidden>
+            <button type="button" class="cover-button" id="coverButton" aria-label="Putar video">
+              <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              <svg class="icon-replay" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+            </button>
+            <span class="cover-spinner" aria-hidden="true"></span>
+          </div>
+          <div class="player-error" id="playerError" role="alert" hidden></div>
+        </div>
         <div class="controls" id="playerControls" hidden>
           <button type="button" class="ctrl" id="btnPlay" aria-label="Putar">
             <svg class="i-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
@@ -128,9 +133,7 @@
           </button>
         </div>
       </div>
-
       <div class="modal-info">
-        <h3 id="modalTitle"></h3>
         <p class="modal-meta" id="modalMeta"></p>
         <p class="modal-desc" id="modalDesc"></p>
       </div>

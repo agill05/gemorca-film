@@ -1,12 +1,41 @@
-// Gemorca Film — data is pulled live from a published Google Sheet (CSV).
-// Sheet columns expected: video, judul, genre, tahun, poster, deskripsi, unggulan.
-const SHEET_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5dCln-zDV_zKmTvNwaNrttTBQaRjGPs5W6KjovG2_HZYjgYKciJrOcJv5jXBl6bfkOl_SSbi3cvs5/pub?gid=0&single=true&output=csv";
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5dCln-zDV_zKmTvNwaNrttTBQaRjGPs5W6KjovG2_HZYjgYKciJrOcJv5jXBl6bfkOl_SSbi3cvs5/pub?gid=0&single=true&output=csv";
+
+let FILMS = [];
 
 (function () {
   "use strict";
 
-  const $ = (sel) => document.querySelector(sel);
+  const $ = (selector) => document.querySelector(selector);
+
+  const header = $("#siteHeader");
+  const hero = $("#top");
+  const grid = $("#movieGrid");
+  const chipsBox = $("#genre");
+  const navGenre = $("#navGenre");
+  const emptyState = $("#emptyState");
+  const emptyTitle = $("#emptyTitle");
+  const emptyText = $("#emptyText");
+  const resetButton = $("#resetFilter");
+  const sectionTitle = $("#sectionTitle");
+  const resultCount = $("#resultCount");
+  const searchInput = $("#searchInput");
+  const modal = $("#playerModal");
+  const modalClose = $("#modalClose");
+  const modalMeta = $("#modalMeta");
+  const modalDesc = $("#modalDesc");
+  const playerWrap = $("#playerWrap");
+  const playerHost = $("#playerHost");
+  const playerSurface = $("#playerSurface");
+  const playerCover = $("#playerCover");
+  const coverButton = $("#coverButton");
+  const playerError = $("#playerError");
+  const controls = $("#playerControls");
+  const btnPlay = $("#btnPlay");
+  const seekBar = $("#seekBar");
+  const timeLabel = $("#timeLabel");
+  const btnMute = $("#btnMute");
+  const volumeBar = $("#volumeBar");
+  const btnFullscreen = $("#btnFullscreen");
 
   const ALL_GENRES = "Semua";
   const TITLE_CACHE_PREFIX = "gemorcafilm_title_";
@@ -15,65 +44,35 @@ const SHEET_CSV_URL =
   const VOLUME_STEP = 10;
   const AUTOPLAY_GRACE_MS = 1800;
   const PROGRESS_INTERVAL_MS = 250;
-  const YT = { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3 };
-  const PLAY_ICON_SVG =
+  const YT_ENDED = 0;
+  const YT_PLAYING = 1;
+  const YT_PAUSED = 2;
+  const YT_BUFFERING = 3;
+  const PLAY_ICON =
     '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 
-  // ---- elements -----------------------------------------------------
-
-  const els = {
-    header: $("#header"),
-    hero: $("#top"),
-    heroBg: $("#heroBg"),
-    heroYear: $("#heroYear"),
-    heroTitle: $("#heroTitle"),
-    heroTags: $("#heroTags"),
-    heroDesc: $("#heroDesc"),
-    heroPlay: $("#heroPlay"),
-    grid: $("#movieGrid"),
-    chipsBox: $("#genre-filter"),
-    navGenre: $("#navGenre"),
-    emptyState: $("#emptyState"),
-    emptyTitle: $("#emptyTitle"),
-    emptyText: $("#emptyText"),
-    resetButton: $("#resetFilter"),
-    catalogTitle: $("#catalogTitle"),
-    resultCount: $("#resultCount"),
-    searchInput: $("#searchInput"),
-    modal: $("#playerModal"),
-    modalClose: $("#modalClose"),
-    modalTitle: $("#modalTitle"),
-    modalMeta: $("#modalMeta"),
-    modalDesc: $("#modalDesc"),
-    player: $("#player"),
-    playerHost: $("#playerHost"),
-    playerSurface: $("#playerSurface"),
-    playerCover: $("#playerCover"),
-    coverButton: $("#coverButton"),
-    playerError: $("#playerError"),
-    controls: $("#playerControls"),
-    btnPlay: $("#btnPlay"),
-    seekBar: $("#seekBar"),
-    timeLabel: $("#timeLabel"),
-    btnMute: $("#btnMute"),
-    volumeBar: $("#volumeBar"),
-    btnFullscreen: $("#btnFullscreen")
-  };
-
-  let FILMS = [];
   const state = { query: "", genre: ALL_GENRES, loadFailed: false };
-  const player = { yt: null, session: 0, ready: false, seeking: false, timer: null, graceTimer: null, film: null };
+  const player = {
+    yt: null,
+    session: 0,
+    ready: false,
+    seeking: false,
+    timer: null,
+    graceTimer: null,
+    film: null
+  };
   let lastFocused = null;
   let ytApiPromise = null;
-
-  // ---- small helpers --------------------------------------------------
 
   function setText(el, text) {
     if (el) el.textContent = text;
   }
 
   function splitGenre(text) {
-    return String(text || "").split(",").map((g) => g.trim()).filter(Boolean);
+    return String(text || "")
+      .split(",")
+      .map((g) => g.trim())
+      .filter(Boolean);
   }
 
   function findFilm(id) {
@@ -87,16 +86,6 @@ const SHEET_CSV_URL =
     return el;
   }
 
-  function formatTime(seconds) {
-    const total = Math.max(0, Math.floor(seconds || 0));
-    const h = Math.floor(total / 3600);
-    const m = Math.floor((total % 3600) / 60);
-    const s = String(total % 60).padStart(2, "0");
-    return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + s : m + ":" + s;
-  }
-
-  // ---- video URL parsing -----------------------------------------------
-
   function youtubeId(raw) {
     const valid = (v) => (/^[\w-]{11}$/.test(v || "") ? v : "");
     try {
@@ -109,7 +98,7 @@ const SHEET_CSV_URL =
         return m ? valid(m[1]) : "";
       }
     } catch (e) {
-      /* not a URL */
+      return "";
     }
     return "";
   }
@@ -137,8 +126,6 @@ const SHEET_CSV_URL =
     }
     return "";
   }
-
-  // ---- CSV parsing & mapping --------------------------------------------
 
   function parseCSV(text) {
     const rows = [];
@@ -185,50 +172,41 @@ const SHEET_CSV_URL =
     if (rows.length < 2) return [];
 
     const head = rows[0].map((h) => h.trim().toLowerCase());
-    const colIndex = (names) => head.findIndex((h) => names.includes(h));
-    const columns = {
-      video: colIndex(["video", "link", "url", "videourl", "videoembedurl"]),
-      judul: colIndex(["judul", "title"]),
-      genre: colIndex(["genre"]),
-      tahun: colIndex(["tahun", "year"]),
-      poster: colIndex(["poster", "posterurl"]),
-      deskripsi: colIndex(["deskripsi", "sinopsis"]),
-      unggulan: colIndex(["unggulan", "featured"])
+    const col = (names) => head.findIndex((h) => names.includes(h));
+    const idx = {
+      video: col(["video", "link", "url", "videourl", "videoembedurl"]),
+      judul: col(["judul", "title"]),
+      genre: col(["genre"]),
+      tahun: col(["tahun", "year"]),
+      poster: col(["poster", "posterurl"]),
+      deskripsi: col(["deskripsi", "sinopsis"]),
+      unggulan: col(["unggulan", "featured"])
     };
-    const cell = (row, key) => (columns[key] >= 0 ? (row[columns[key]] || "").trim() : "");
+    const val = (row, key) => (idx[key] >= 0 ? (row[idx[key]] || "").trim() : "");
 
     return rows
       .slice(1)
       .map((row, i) => {
-        const video = cell(row, "video");
+        const video = val(row, "video");
         if (!video) return null;
 
         const ytId = youtubeId(video);
-        const poster = cell(row, "poster");
+        const poster = val(row, "poster");
         const film = {
           id: i + 1,
-          judul: cell(row, "judul"),
-          genre: cell(row, "genre"),
-          tahun: cell(row, "tahun"),
+          judul: val(row, "judul"),
+          genre: val(row, "genre"),
+          tahun: val(row, "tahun"),
           posterUrl: poster || (ytId ? "https://img.youtube.com/vi/" + ytId + "/hqdefault.jpg" : ""),
           videoEmbedUrl: video,
-          deskripsi: cell(row, "deskripsi"),
-          unggulan: ["ya", "yes", "true", "1", "x"].includes(cell(row, "unggulan").toLowerCase())
+          deskripsi: val(row, "deskripsi"),
+          unggulan: ["ya", "yes", "true", "1", "x"].includes(val(row, "unggulan").toLowerCase())
         };
         if (!poster && ytId) film.bannerUrl = "https://img.youtube.com/vi/" + ytId + "/maxresdefault.jpg";
         return film;
       })
       .filter(Boolean);
   }
-
-  async function loadFromSheet() {
-    const res = await fetch(SHEET_CSV_URL);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const text = (await res.text()).replace(/^\uFEFF/, "");
-    return rowsToFilms(parseCSV(text));
-  }
-
-  // ---- fill in missing titles from YouTube oEmbed -----------------------
 
   function readCachedTitle(id) {
     try {
@@ -242,7 +220,7 @@ const SHEET_CSV_URL =
     try {
       localStorage.setItem(TITLE_CACHE_PREFIX + id, title);
     } catch (e) {
-      /* storage unavailable, ignore */
+      return;
     }
   }
 
@@ -275,7 +253,7 @@ const SHEET_CSV_URL =
     return "";
   }
 
-  async function fillMissingTitles(films) {
+  async function fillTitles(films) {
     await Promise.all(
       films.map(async (film) => {
         if (film.judul) return;
@@ -290,35 +268,37 @@ const SHEET_CSV_URL =
     );
   }
 
-  // ---- rendering: hero ---------------------------------------------------
+  async function loadFromSheet() {
+    const res = await fetch(SHEET_CSV_URL);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = (await res.text()).replace(/^\uFEFF/, "");
+    return rowsToFilms(parseCSV(text));
+  }
 
   function renderHero() {
     const film = FILMS.find((f) => f.unggulan) || FILMS[0];
+    hero.hidden = false;
+    document.body.classList.remove("no-hero");
     if (!film) {
-      els.hero.hidden = true;
+      hero.hidden = true;
       document.body.classList.add("no-hero");
       return;
     }
-    els.hero.hidden = false;
-    document.body.classList.remove("no-hero");
 
-    setText(els.heroTitle, film.judul);
-    setText(els.heroYear, film.tahun ? String(film.tahun) : "");
-    els.heroYear.hidden = !film.tahun;
+    $("#heroTitle").textContent = film.judul;
 
-    els.heroDesc.textContent = film.deskripsi || "";
-    els.heroDesc.hidden = !film.deskripsi;
+    const heroDesc = $("#heroDesc");
+    heroDesc.textContent = film.deskripsi || "";
+    heroDesc.hidden = !film.deskripsi;
 
-    els.heroTags.textContent = "";
-    splitGenre(film.genre).forEach((g) => els.heroTags.appendChild(makeEl("span", "tag", g)));
+    const meta = $("#heroMeta");
+    meta.textContent = "";
+    splitGenre(film.genre).forEach((g) => meta.appendChild(makeEl("span", "tag", g)));
+    if (film.tahun) meta.appendChild(makeEl("span", "", String(film.tahun)));
 
-    applyBackdrop(els.heroBg, film);
-    els.heroPlay.onclick = () => openModal(film);
-  }
-
-  function applyBackdrop(target, film) {
+    const heroBg = $("#heroBg");
     const setBg = (src) => {
-      target.style.backgroundImage = "url(" + JSON.stringify(src) + ")";
+      heroBg.style.backgroundImage = "url(" + JSON.stringify(src) + ")";
     };
     const base = film.posterUrl || film.bannerUrl;
     if (base) setBg(base);
@@ -329,34 +309,31 @@ const SHEET_CSV_URL =
       };
       probe.src = film.bannerUrl;
     }
-  }
 
-  // ---- rendering: genre chips ---------------------------------------------
+    $("#heroPlay").onclick = () => openModal(film);
+  }
 
   function renderChips() {
     const hasGenres = FILMS.some((f) => splitGenre(f.genre).length > 0);
-    els.chipsBox.hidden = !hasGenres;
-    els.navGenre.hidden = !hasGenres;
-    els.chipsBox.textContent = "";
+    chipsBox.hidden = !hasGenres;
+    if (navGenre) navGenre.hidden = !hasGenres;
+    chipsBox.textContent = "";
     if (!hasGenres) return;
-
     const genres = [ALL_GENRES, ...new Set(FILMS.flatMap((f) => splitGenre(f.genre)))];
     genres.forEach((g) => {
       const chip = makeEl("button", "chip", g);
       chip.type = "button";
       chip.dataset.genre = g;
       chip.setAttribute("aria-pressed", String(g === state.genre));
-      els.chipsBox.appendChild(chip);
+      chipsBox.appendChild(chip);
     });
   }
 
   function syncChips() {
-    els.chipsBox.querySelectorAll(".chip").forEach((chip) => {
+    chipsBox.querySelectorAll(".chip").forEach((chip) => {
       chip.setAttribute("aria-pressed", String(chip.dataset.genre === state.genre));
     });
   }
-
-  // ---- rendering: film grid ------------------------------------------------
 
   function createCard(film) {
     const card = makeEl("button", "card");
@@ -381,11 +358,13 @@ const SHEET_CSV_URL =
     }
 
     const play = makeEl("div", "card-play");
-    play.innerHTML = PLAY_ICON_SVG;
+    const playBtn = makeEl("span");
+    playBtn.innerHTML = PLAY_ICON;
+    play.appendChild(playBtn);
     poster.appendChild(play);
 
     const meta = makeEl("div", "card-meta");
-    if (film.genre) meta.appendChild(makeEl("span", "card-genre", splitGenre(film.genre)[0]));
+    meta.appendChild(makeEl("span", "card-genre", film.genre || ""));
     if (film.tahun) meta.appendChild(makeEl("span", "card-year", String(film.tahun)));
 
     card.append(poster, makeEl("span", "card-title", film.judul), meta);
@@ -395,62 +374,70 @@ const SHEET_CSV_URL =
   function getFilteredFilms() {
     const q = state.query.trim().toLowerCase();
     return FILMS.filter((film) => {
-      const genreOk = state.genre === ALL_GENRES || splitGenre(film.genre).includes(state.genre);
-      const haystack = (film.judul + " " + film.genre + " " + (film.tahun || "")).toLowerCase();
-      return genreOk && (!q || haystack.includes(q));
+      const genreOk =
+        state.genre === ALL_GENRES || splitGenre(film.genre).includes(state.genre);
+      const text = (film.judul + " " + film.genre + " " + (film.tahun || "")).toLowerCase();
+      return genreOk && (!q || text.includes(q));
     });
   }
 
   function renderGrid() {
     const films = getFilteredFilms();
 
-    els.grid.replaceChildren(...films.map(createCard));
-    els.grid.hidden = films.length === 0;
-    els.emptyState.hidden = films.length > 0;
+    grid.replaceChildren(...films.map(createCard));
+    grid.hidden = films.length === 0;
+    emptyState.hidden = films.length > 0;
 
     const noData = FILMS.length === 0;
     if (noData && state.loadFailed) {
-      setText(els.emptyTitle, "Daftar film gagal dimuat");
-      setText(els.emptyText, "Periksa koneksi internet, lalu muat ulang halaman.");
+      setText(emptyTitle, "Daftar film gagal dimuat");
+      setText(emptyText, "Periksa koneksi internet, lalu muat ulang halaman.");
     } else if (noData) {
-      setText(els.emptyTitle, "Belum ada film");
-      setText(els.emptyText, "Isi kolom video di Google Sheet dengan link YouTube.");
+      setText(emptyTitle, "Belum ada film");
+      setText(emptyText, "Isi kolom video di Google Sheet dengan link YouTube.");
     } else {
-      setText(els.emptyTitle, "Film tidak ditemukan");
-      setText(els.emptyText, "Coba kata kunci lain atau pilih genre berbeda.");
+      setText(emptyTitle, "Film tidak ditemukan");
+      setText(emptyText, "Coba kata kunci lain atau pilih genre berbeda.");
     }
-    els.resetButton.hidden = noData;
+    if (resetButton) resetButton.hidden = noData;
 
     const q = state.query.trim();
-    if (q) els.catalogTitle.textContent = "Hasil untuk \u201C" + q + "\u201D";
-    else if (state.genre !== ALL_GENRES) els.catalogTitle.textContent = state.genre;
-    else els.catalogTitle.textContent = "Semua Film";
+    if (q) sectionTitle.textContent = "Hasil untuk \u201C" + q + "\u201D";
+    else if (state.genre !== ALL_GENRES) sectionTitle.textContent = state.genre;
+    else sectionTitle.textContent = "Semua Film";
 
-    els.resultCount.textContent = films.length + " film";
+    resultCount.textContent = films.length + " film";
   }
 
   function resetFilter() {
     state.query = "";
     state.genre = ALL_GENRES;
-    els.searchInput.value = "";
+    searchInput.value = "";
     syncChips();
     renderGrid();
   }
 
-  // ---- player: shared UI state --------------------------------------------
+  function formatTime(seconds) {
+    const total = Math.max(0, Math.floor(seconds || 0));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const sec = String(total % 60).padStart(2, "0");
+    if (h > 0) return h + ":" + String(m).padStart(2, "0") + ":" + sec;
+    return m + ":" + sec;
+  }
 
-  function setCover(mode) {
-    if (mode === "hidden") {
-      els.playerCover.hidden = true;
+  function setCover(name) {
+    if (name === "hidden") {
+      playerCover.hidden = true;
       return;
     }
-    els.playerCover.hidden = false;
-    els.playerCover.dataset.state = mode;
+    playerCover.hidden = false;
+    playerCover.dataset.state = name;
   }
 
   function setCoverImage(film) {
     const apply = (src) => {
-      els.playerCover.style.backgroundImage = src ? "url(" + JSON.stringify(src) + ")" : "";
+      playerCover.style.backgroundImage = src ? "url(" + JSON.stringify(src) + ")" : "";
     };
     apply(film.posterUrl || film.bannerUrl);
     if (film.bannerUrl && film.bannerUrl !== film.posterUrl) {
@@ -463,16 +450,16 @@ const SHEET_CSV_URL =
   }
 
   function showPlayerError(message) {
-    els.playerError.textContent = message;
-    els.playerError.hidden = false;
-    els.playerCover.hidden = true;
-    els.controls.hidden = true;
-    els.playerSurface.hidden = true;
+    playerError.textContent = message;
+    playerError.hidden = false;
+    playerCover.hidden = true;
+    controls.hidden = true;
+    playerSurface.hidden = true;
   }
 
-  function setPlayingUI(isPlaying) {
-    els.player.classList.toggle("is-playing", isPlaying);
-    els.btnPlay.setAttribute("aria-label", isPlaying ? "Jeda" : "Putar");
+  function setPlaying(isPlaying) {
+    playerWrap.classList.toggle("is-playing", isPlaying);
+    btnPlay.setAttribute("aria-label", isPlaying ? "Jeda" : "Putar");
   }
 
   function updateProgress() {
@@ -480,29 +467,29 @@ const SHEET_CSV_URL =
     const current = player.yt.getCurrentTime() || 0;
     const duration = player.yt.getDuration() || 0;
     const ratio = duration > 0 ? Math.min(current / duration, 1) : 0;
-    els.seekBar.value = String(Math.round(ratio * 1000));
-    els.seekBar.style.setProperty("--progress", ratio * 100 + "%");
-    els.timeLabel.textContent = formatTime(current) + " / " + formatTime(duration);
+    seekBar.value = String(Math.round(ratio * 1000));
+    seekBar.style.setProperty("--progress", ratio * 100 + "%");
+    timeLabel.textContent = formatTime(current) + " / " + formatTime(duration);
   }
 
-  function syncVolumeUI() {
+  function syncVolume() {
     if (!player.ready) return;
     const muted = player.yt.isMuted();
     const volume = muted ? 0 : player.yt.getVolume();
-    els.volumeBar.value = String(volume);
-    els.volumeBar.style.setProperty("--progress", volume + "%");
-    els.player.classList.toggle("is-muted", volume === 0);
-    els.btnMute.setAttribute("aria-label", volume === 0 ? "Aktifkan suara" : "Bisukan");
+    volumeBar.value = String(volume);
+    volumeBar.style.setProperty("--progress", volume + "%");
+    playerWrap.classList.toggle("is-muted", volume === 0);
+    btnMute.setAttribute("aria-label", volume === 0 ? "Aktifkan suara" : "Bisukan");
   }
 
   function togglePlay() {
     if (!player.ready) return;
     const st = player.yt.getPlayerState();
-    if (st === YT.PLAYING || st === YT.BUFFERING) {
+    if (st === YT_PLAYING || st === YT_BUFFERING) {
       player.yt.pauseVideo();
       return;
     }
-    if (st === YT.ENDED) player.yt.seekTo(0, true);
+    if (st === YT_ENDED) player.yt.seekTo(0, true);
     player.yt.playVideo();
   }
 
@@ -521,7 +508,7 @@ const SHEET_CSV_URL =
     player.yt.setVolume(volume);
     if (volume > 0 && player.yt.isMuted()) player.yt.unMute();
     if (volume === 0) player.yt.mute();
-    syncVolumeUI();
+    syncVolume();
   }
 
   function toggleMute() {
@@ -533,12 +520,10 @@ const SHEET_CSV_URL =
     } else {
       player.yt.mute();
     }
-    syncVolumeUI();
+    syncVolume();
   }
 
-  // ---- player: fullscreen --------------------------------------------------
-
-  const requestFullscreenFn = els.player.requestFullscreen || els.player.webkitRequestFullscreen;
+  const requestFullscreenFn = playerWrap.requestFullscreen || playerWrap.webkitRequestFullscreen;
   const exitFullscreenFn = document.exitFullscreen || document.webkitExitFullscreen;
 
   function fullscreenElement() {
@@ -557,11 +542,9 @@ const SHEET_CSV_URL =
       exitFullscreen();
       return;
     }
-    const result = requestFullscreenFn.call(els.player);
+    const result = requestFullscreenFn.call(playerWrap);
     if (result && typeof result.catch === "function") result.catch(() => {});
   }
-
-  // ---- player: YouTube API ---------------------------------------------------
 
   function loadYouTubeApi() {
     if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
@@ -584,32 +567,89 @@ const SHEET_CSV_URL =
     return ytApiPromise;
   }
 
+  function teardownPlayer() {
+    player.session += 1;
+    clearInterval(player.timer);
+    clearTimeout(player.graceTimer);
+    if (player.yt && typeof player.yt.destroy === "function") {
+      try {
+        player.yt.destroy();
+      } catch (e) {
+        player.yt = null;
+      }
+    }
+    player.yt = null;
+    player.ready = false;
+    player.seeking = false;
+    player.film = null;
+    playerHost.textContent = "";
+    playerWrap.classList.remove("is-playing", "is-paused", "is-muted");
+    playerError.hidden = true;
+    playerError.textContent = "";
+    playerCover.hidden = true;
+    playerSurface.hidden = false;
+    controls.hidden = true;
+    seekBar.value = "0";
+    seekBar.style.setProperty("--progress", "0%");
+    timeLabel.textContent = "0:00 / 0:00";
+    btnPlay.setAttribute("aria-label", "Putar");
+  }
+
+  function buildDriveLinkBlocker() {
+    const blocker = makeEl("div", "drive-link-blocker");
+    blocker.setAttribute("aria-hidden", "true");
+    blocker.addEventListener("contextmenu", (e) => e.preventDefault());
+    return blocker;
+  }
+
+  function startFallback(film) {
+    const src = buildEmbedUrl(film.videoEmbedUrl);
+    if (!src) {
+      showPlayerError("Link video tidak valid. Periksa kolom video di Google Sheet.");
+      return;
+    }
+    controls.hidden = true;
+    playerSurface.hidden = true;
+    playerCover.hidden = true;
+
+    const iframe = document.createElement("iframe");
+    iframe.src = src;
+    iframe.title = "Pemutar video: " + film.judul;
+    iframe.allow =
+      "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+
+    playerHost.appendChild(iframe);
+    playerHost.appendChild(buildDriveLinkBlocker());
+  }
+
   function onPlayerReady(session) {
     if (session !== player.session) return;
     player.ready = true;
-    syncVolumeUI();
+    syncVolume();
     updateProgress();
     player.timer = setInterval(updateProgress, PROGRESS_INTERVAL_MS);
     player.yt.playVideo();
     player.graceTimer = setTimeout(() => {
       if (session !== player.session || !player.ready) return;
       const st = player.yt.getPlayerState();
-      if (st !== YT.PLAYING && st !== YT.BUFFERING) setCover("idle");
+      if (st !== YT_PLAYING && st !== YT_BUFFERING) setCover("idle");
     }, AUTOPLAY_GRACE_MS);
   }
 
-  function onPlayerStateChange(session, st) {
+  function onPlayerState(session, st) {
     if (session !== player.session) return;
-    if (st === YT.PLAYING) {
+    if (st === YT_PLAYING) {
       setCover("hidden");
-      setPlayingUI(true);
-      els.player.classList.remove("is-paused");
-    } else if (st === YT.PAUSED) {
-      setPlayingUI(false);
-      els.player.classList.add("is-paused");
-    } else if (st === YT.ENDED) {
-      setPlayingUI(false);
-      els.player.classList.remove("is-paused");
+      setPlaying(true);
+      playerWrap.classList.remove("is-paused");
+    } else if (st === YT_PAUSED) {
+      setPlaying(false);
+      playerWrap.classList.add("is-paused");
+    } else if (st === YT_ENDED) {
+      setPlaying(false);
+      playerWrap.classList.remove("is-paused");
       setCover("ended");
     }
     updateProgress();
@@ -617,24 +657,28 @@ const SHEET_CSV_URL =
 
   function onPlayerError(session, code) {
     if (session !== player.session) return;
-    if (code === 100) showPlayerError("Video tidak ditemukan atau bersifat privat.");
-    else if (code === 101 || code === 150) showPlayerError("Pemilik video tidak mengizinkan video ini diputar di website lain.");
-    else showPlayerError("Video tidak dapat diputar. Coba muat ulang halaman.");
+    if (code === 100) {
+      showPlayerError("Video tidak ditemukan atau bersifat privat.");
+    } else if (code === 101 || code === 150) {
+      showPlayerError("Pemilik video tidak mengizinkan video ini diputar di website lain.");
+    } else {
+      showPlayerError("Video tidak dapat diputar. Coba muat ulang halaman.");
+    }
   }
 
-  async function startYouTube(videoId, session) {
+  async function startYouTube(film, videoId, session) {
     setCover("loading");
     let api;
     try {
       api = await loadYouTubeApi();
     } catch (e) {
-      if (session === player.session) startFallback(player.film);
+      if (session === player.session) startFallback(film);
       return;
     }
     if (session !== player.session) return;
 
     const target = document.createElement("div");
-    els.playerHost.appendChild(target);
+    playerHost.appendChild(target);
     const vars = {
       autoplay: 1,
       controls: 0,
@@ -652,71 +696,10 @@ const SHEET_CSV_URL =
       playerVars: vars,
       events: {
         onReady: () => onPlayerReady(session),
-        onStateChange: (e) => onPlayerStateChange(session, e.data),
+        onStateChange: (e) => onPlayerState(session, e.data),
         onError: (e) => onPlayerError(session, e.data)
       }
     });
-  }
-
-  // ---- player: non-YouTube fallback (e.g. Google Drive) -----------------------
-
-  function buildDriveLinkBlocker() {
-    const blocker = makeEl("div", "drive-link-blocker");
-    blocker.setAttribute("aria-hidden", "true");
-    blocker.addEventListener("contextmenu", (e) => e.preventDefault());
-    return blocker;
-  }
-
-  function startFallback(film) {
-    const src = buildEmbedUrl(film.videoEmbedUrl);
-    if (!src) {
-      showPlayerError("Link video tidak valid. Periksa kolom video di Google Sheet.");
-      return;
-    }
-    els.controls.hidden = true;
-    els.playerSurface.hidden = true;
-    els.playerCover.hidden = true;
-
-    const iframe = document.createElement("iframe");
-    iframe.src = src;
-    iframe.title = "Pemutar video: " + film.judul;
-    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
-    iframe.allowFullscreen = true;
-    iframe.referrerPolicy = "strict-origin-when-cross-origin";
-
-    els.playerHost.appendChild(iframe);
-    els.playerHost.appendChild(buildDriveLinkBlocker());
-  }
-
-  // ---- player: lifecycle ----------------------------------------------------
-
-  function teardownPlayer() {
-    player.session += 1;
-    clearInterval(player.timer);
-    clearTimeout(player.graceTimer);
-    if (player.yt && typeof player.yt.destroy === "function") {
-      try {
-        player.yt.destroy();
-      } catch (e) {
-        /* already gone */
-      }
-    }
-    player.yt = null;
-    player.ready = false;
-    player.seeking = false;
-    player.film = null;
-
-    els.playerHost.textContent = "";
-    els.player.classList.remove("is-playing", "is-paused", "is-muted");
-    els.playerError.hidden = true;
-    els.playerError.textContent = "";
-    els.playerCover.hidden = true;
-    els.playerSurface.hidden = false;
-    els.controls.hidden = true;
-    els.seekBar.value = "0";
-    els.seekBar.style.setProperty("--progress", "0%");
-    els.timeLabel.textContent = "0:00 / 0:00";
-    els.btnPlay.setAttribute("aria-label", "Putar");
   }
 
   function openModal(film) {
@@ -724,38 +707,38 @@ const SHEET_CSV_URL =
     teardownPlayer();
     player.film = film;
 
-    els.modalTitle.textContent = film.judul;
-    els.modalDesc.textContent = film.deskripsi || "";
-    els.modalDesc.hidden = !film.deskripsi;
+    $("#modalTitle").textContent = film.judul;
+    modalDesc.textContent = film.deskripsi || "";
+    modalDesc.hidden = !film.deskripsi;
     const metaText = [film.genre, film.tahun].filter(Boolean).join(" \u2022 ");
-    els.modalMeta.textContent = metaText;
-    els.modalMeta.hidden = !metaText;
+    modalMeta.textContent = metaText;
+    modalMeta.hidden = !metaText;
 
-    els.modal.hidden = false;
+    modal.hidden = false;
     document.body.classList.add("no-scroll");
 
     const videoId = youtubeId(film.videoEmbedUrl);
     if (videoId) {
-      els.controls.hidden = false;
+      controls.hidden = false;
       setCoverImage(film);
-      startYouTube(videoId, player.session);
+      startYouTube(film, videoId, player.session);
     } else {
       startFallback(film);
     }
-    els.modalClose.focus();
+    modalClose.focus();
   }
 
   function closeModal() {
-    if (els.modal.hidden) return;
+    if (modal.hidden) return;
     exitFullscreen();
     teardownPlayer();
-    els.modal.hidden = true;
+    modal.hidden = true;
     document.body.classList.remove("no-scroll");
     if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
   }
 
-  function onPlayerKeydown(e) {
-    if (els.modal.hidden || !player.ready) return;
+  function onPlayerKey(e) {
+    if (modal.hidden || !player.ready) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const tag = e.target.tagName;
     if (e.key === " ") {
@@ -778,16 +761,14 @@ const SHEET_CSV_URL =
     e.preventDefault();
   }
 
-  // ---- wire up events ---------------------------------------------------
-
-  els.grid.addEventListener("click", (e) => {
+  grid.addEventListener("click", (e) => {
     const card = e.target.closest(".card");
     if (!card) return;
     const film = findFilm(card.dataset.id);
     if (film) openModal(film);
   });
 
-  els.chipsBox.addEventListener("click", (e) => {
+  chipsBox.addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
     if (!chip) return;
     state.genre = chip.dataset.genre;
@@ -795,16 +776,16 @@ const SHEET_CSV_URL =
     renderGrid();
   });
 
-  els.searchInput.addEventListener("input", () => {
-    state.query = els.searchInput.value;
+  searchInput.addEventListener("input", () => {
+    state.query = searchInput.value;
     renderGrid();
   });
 
-  els.searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") $("#katalog").scrollIntoView({ behavior: "smooth" });
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("#film").scrollIntoView({ behavior: "smooth" });
   });
 
-  els.resetButton.addEventListener("click", resetFilter);
+  resetButton.addEventListener("click", resetFilter);
 
   document.querySelectorAll("[data-home]").forEach((link) => {
     link.addEventListener("click", (e) => {
@@ -814,75 +795,72 @@ const SHEET_CSV_URL =
     });
   });
 
-  els.modalClose.addEventListener("click", closeModal);
-  els.modal.addEventListener("click", (e) => {
+  modalClose.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => {
     if (e.target.hasAttribute("data-close")) closeModal();
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeModal();
-    else onPlayerKeydown(e);
+    else onPlayerKey(e);
   });
 
-  els.playerSurface.addEventListener("click", togglePlay);
-  els.playerSurface.addEventListener("dblclick", toggleFullscreen);
-  els.btnPlay.addEventListener("click", togglePlay);
-  els.btnMute.addEventListener("click", toggleMute);
-  els.btnFullscreen.addEventListener("click", toggleFullscreen);
-  els.btnFullscreen.hidden = !requestFullscreenFn;
+  playerSurface.addEventListener("click", togglePlay);
+  playerSurface.addEventListener("dblclick", toggleFullscreen);
+  btnPlay.addEventListener("click", togglePlay);
+  btnMute.addEventListener("click", toggleMute);
+  btnFullscreen.addEventListener("click", toggleFullscreen);
+  btnFullscreen.hidden = !requestFullscreenFn;
 
-  els.coverButton.addEventListener("click", () => {
+  coverButton.addEventListener("click", () => {
     if (!player.ready) return;
-    if (player.yt.getPlayerState() === YT.ENDED) player.yt.seekTo(0, true);
+    if (player.yt.getPlayerState() === YT_ENDED) player.yt.seekTo(0, true);
     player.yt.playVideo();
   });
 
-  els.seekBar.addEventListener("input", () => {
+  seekBar.addEventListener("input", () => {
     player.seeking = true;
-    const ratio = Number(els.seekBar.value) / 1000;
-    els.seekBar.style.setProperty("--progress", ratio * 100 + "%");
+    const ratio = Number(seekBar.value) / 1000;
+    seekBar.style.setProperty("--progress", ratio * 100 + "%");
     if (player.ready) {
       const duration = player.yt.getDuration() || 0;
-      els.timeLabel.textContent = formatTime(duration * ratio) + " / " + formatTime(duration);
+      timeLabel.textContent = formatTime(duration * ratio) + " / " + formatTime(duration);
     }
   });
 
-  els.seekBar.addEventListener("change", () => {
+  seekBar.addEventListener("change", () => {
     if (player.ready) {
       const duration = player.yt.getDuration() || 0;
-      player.yt.seekTo((duration * Number(els.seekBar.value)) / 1000, true);
+      player.yt.seekTo((duration * Number(seekBar.value)) / 1000, true);
     }
     player.seeking = false;
   });
 
-  els.volumeBar.addEventListener("input", () => setVolume(Number(els.volumeBar.value)));
+  volumeBar.addEventListener("input", () => setVolume(Number(volumeBar.value)));
 
   const syncFullscreenClass = () => {
-    els.player.classList.toggle("is-fullscreen", fullscreenElement() === els.player);
+    playerWrap.classList.toggle("is-fullscreen", fullscreenElement() === playerWrap);
   };
   document.addEventListener("fullscreenchange", syncFullscreenClass);
   document.addEventListener("webkitfullscreenchange", syncFullscreenClass);
 
   document.addEventListener("focusin", (e) => {
-    if (!els.modal.hidden && !els.modal.contains(e.target)) els.modalClose.focus();
+    if (!modal.hidden && !modal.contains(e.target)) modalClose.focus();
   });
 
-  window.addEventListener(
-    "scroll",
-    () => els.header.classList.toggle("is-scrolled", window.scrollY > 20),
-    { passive: true }
-  );
-
-  // ---- boot ---------------------------------------------------------------
+  const onScroll = () => header.classList.toggle("is-scrolled", window.scrollY > 20);
+  window.addEventListener("scroll", onScroll, { passive: true });
 
   async function init() {
     $("#year").textContent = new Date().getFullYear();
-    els.header.classList.toggle("is-scrolled", window.scrollY > 20);
+    onScroll();
 
     if (SHEET_CSV_URL) {
-      els.resultCount.textContent = "Memuat film...";
+      hero.hidden = true;
+      document.body.classList.add("no-hero");
+      resultCount.textContent = "Memuat film...";
       try {
         const films = await loadFromSheet();
-        await fillMissingTitles(films);
+        await fillTitles(films);
         FILMS = films;
       } catch (err) {
         state.loadFailed = true;
