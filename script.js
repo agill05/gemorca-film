@@ -59,7 +59,8 @@ let FILMS = [];
     seeking: false,
     timer: null,
     graceTimer: null,
-    film: null
+    film: null,
+    driveCleanup: null
   };
   let lastFocused = null;
   let ytApiPromise = null;
@@ -571,6 +572,10 @@ let FILMS = [];
     player.session += 1;
     clearInterval(player.timer);
     clearTimeout(player.graceTimer);
+    if (typeof player.driveCleanup === "function") {
+      player.driveCleanup();
+      player.driveCleanup = null;
+    }
     if (player.yt && typeof player.yt.destroy === "function") {
       try {
         player.yt.destroy();
@@ -593,6 +598,47 @@ let FILMS = [];
     seekBar.style.setProperty("--progress", "0%");
     timeLabel.textContent = "0:00 / 0:00";
     btnPlay.setAttribute("aria-label", "Putar");
+  }
+
+  const DRIVE_VIRTUAL_W = 640;
+  const DRIVE_VIRTUAL_H = 360;
+
+  function mountDriveIframe(container, src, title) {
+    const scaleWrap = document.createElement("div");
+    scaleWrap.className = "drive-scale-wrap";
+    const iframe = document.createElement("iframe");
+    iframe.src = src;
+    iframe.title = title;
+    iframe.width = String(DRIVE_VIRTUAL_W);
+    iframe.height = String(DRIVE_VIRTUAL_H);
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    iframe.allowFullscreen = false;
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    scaleWrap.appendChild(iframe);
+    container.appendChild(scaleWrap);
+
+    const applyScale = () => {
+      const w = container.clientWidth;
+      const scale = w > 0 ? w / DRIVE_VIRTUAL_W : 1;
+      scaleWrap.style.transform = "scale(" + scale + ")";
+    };
+    applyScale();
+
+    let ro = null;
+    if (window.ResizeObserver) {
+      ro = new ResizeObserver(applyScale);
+      ro.observe(container);
+    } else {
+      window.addEventListener("resize", applyScale);
+    }
+
+    return {
+      iframe: iframe,
+      cleanup: function () {
+        if (ro) ro.disconnect();
+        else window.removeEventListener("resize", applyScale);
+      }
+    };
   }
 
   function buildDriveShield() {
@@ -623,12 +669,8 @@ let FILMS = [];
     setCoverImage(film);
     setCover("loading");
 
-    const iframe = document.createElement("iframe");
-    iframe.src = src;
-    iframe.title = "Pemutar video: " + film.judul;
-    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-    iframe.allowFullscreen = false;
-    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    const mounted = mountDriveIframe(playerHost, src, "Pemutar video: " + film.judul);
+    player.driveCleanup = mounted.cleanup;
 
     let revealed = false;
     const reveal = () => {
@@ -636,10 +678,9 @@ let FILMS = [];
       revealed = true;
       setCover("hidden");
     };
-    iframe.addEventListener("load", reveal);
+    mounted.iframe.addEventListener("load", reveal);
     setTimeout(reveal, 8000);
 
-    playerHost.appendChild(iframe);
     playerHost.appendChild(buildDriveShield());
   }
 
