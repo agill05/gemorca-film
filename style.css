@@ -94,7 +94,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; }
 .header-inner {
   display: flex;
   align-items: center;
-  gap: 32px;
+  justify-content: space-between;
+  gap: 20px;
   width: 100%;
 }
 
@@ -146,6 +147,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; }
   border-radius: 999px;
   padding: 8px 14px;
   width: 240px;
+  min-width: 0;
   transition: border-color 0.15s ease, width 0.2s ease;
 }
 
@@ -164,7 +166,15 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; }
 
 @media (max-width: 720px) {
   .nav { display: none; }
-  .search { width: 100%; }
+  .search,
+  .search:focus-within { width: 100%; max-width: 260px; }
+}
+
+@media (max-width: 480px) {
+  .wrap { padding: 0 16px; }
+  .header-inner { gap: 12px; }
+  .brand-name { font-size: 1.02rem; }
+  .search { max-width: none; flex: 1; padding: 7px 12px; }
 }
 
 /* ---------------- Hero ---------------- */
@@ -241,6 +251,13 @@ body.no-hero .hero { display: none; }
   font-size: 1rem;
   max-width: 52ch;
   margin: 0 0 28px;
+}
+
+@media (max-width: 480px) {
+  .hero { min-height: auto; }
+  .hero-inner { padding-top: calc(var(--header-h) + 24px); padding-bottom: 40px; }
+  .hero-desc { font-size: 0.92rem; margin-bottom: 22px; }
+  .btn-ticket { width: 100%; justify-content: center; padding: 14px 20px; }
 }
 
 /* Ticket-stub button: a nod to cinema ticket stubs — icon | dashed tear-line | label */
@@ -326,6 +343,13 @@ body.no-hero .catalog { padding-top: calc(var(--header-h) + 40px); }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 20px 16px;
+}
+
+@media (max-width: 480px) {
+  .catalog { padding: 40px 0 56px; }
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 14px 10px; }
+  .card-title { font-size: 0.84rem; }
+  .card-meta { font-size: 0.72rem; }
 }
 
 .card {
@@ -642,8 +666,12 @@ input[type="range"]::-moz-range-thumb {
 @media (max-width: 640px) {
   .volume { display: none; }
   .modal { padding: 0; }
-  .modal-box { border-radius: 0; height: 100%; display: flex; flex-direction: column; }
+  .modal-box { border-radius: 0; height: 100%; display: flex; flex-direction: column; overflow-y: auto; }
   .player { border-radius: 0; flex-shrink: 0; }
+  .controls { padding: 8px 10px; gap: 8px; opacity: 1; transform: none; }
+  .modal-info { padding: 16px 18px 24px; }
+  .cover-button { width: 56px; height: 56px; }
+  .cover-button svg { width: 24px; height: 24px; }
 }
 
 .modal-info { padding: 20px 24px 28px; }
