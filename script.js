@@ -59,8 +59,7 @@ let FILMS = [];
     seeking: false,
     timer: null,
     graceTimer: null,
-    film: null,
-    driveCleanup: null
+    film: null
   };
   let lastFocused = null;
   let ytApiPromise = null;
@@ -572,10 +571,6 @@ let FILMS = [];
     player.session += 1;
     clearInterval(player.timer);
     clearTimeout(player.graceTimer);
-    if (typeof player.driveCleanup === "function") {
-      player.driveCleanup();
-      player.driveCleanup = null;
-    }
     if (player.yt && typeof player.yt.destroy === "function") {
       try {
         player.yt.destroy();
@@ -588,7 +583,7 @@ let FILMS = [];
     player.seeking = false;
     player.film = null;
     playerHost.textContent = "";
-    playerWrap.classList.remove("is-playing", "is-paused", "is-muted", "is-fallback");
+    playerWrap.classList.remove("is-playing", "is-paused", "is-muted");
     playerError.hidden = true;
     playerError.textContent = "";
     playerCover.hidden = true;
@@ -600,61 +595,11 @@ let FILMS = [];
     btnPlay.setAttribute("aria-label", "Putar");
   }
 
-  const DRIVE_VIRTUAL_W = 640;
-  const DRIVE_VIRTUAL_H = 360;
-
-  function mountDriveIframe(container, src, title) {
-    const scaleWrap = document.createElement("div");
-    scaleWrap.className = "drive-scale-wrap";
-    const iframe = document.createElement("iframe");
-    iframe.src = src;
-    iframe.title = title;
-    iframe.width = String(DRIVE_VIRTUAL_W);
-    iframe.height = String(DRIVE_VIRTUAL_H);
-    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-    iframe.allowFullscreen = false;
-    iframe.referrerPolicy = "strict-origin-when-cross-origin";
-    scaleWrap.appendChild(iframe);
-    container.appendChild(scaleWrap);
-
-    const applyScale = () => {
-      const w = container.clientWidth;
-      const scale = w > 0 ? w / DRIVE_VIRTUAL_W : 1;
-      scaleWrap.style.transform = "scale(" + scale + ")";
-    };
-    applyScale();
-
-    let ro = null;
-    if (window.ResizeObserver) {
-      ro = new ResizeObserver(applyScale);
-      ro.observe(container);
-    } else {
-      window.addEventListener("resize", applyScale);
-    }
-
-    return {
-      iframe: iframe,
-      cleanup: function () {
-        if (ro) ro.disconnect();
-        else window.removeEventListener("resize", applyScale);
-      }
-    };
-  }
-
-  function buildDriveShield() {
-    const shield = makeEl("div", "player-shield");
-    shield.addEventListener("contextmenu", (e) => e.preventDefault());
-    if (requestFullscreenFn) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "drive-fs-btn";
-      btn.setAttribute("aria-label", "Layar penuh");
-      btn.innerHTML =
-        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
-      btn.addEventListener("click", toggleFullscreen);
-      shield.appendChild(btn);
-    }
-    return shield;
+  function buildDriveLinkBlocker() {
+    const blocker = makeEl("div", "drive-link-blocker");
+    blocker.setAttribute("aria-hidden", "true");
+    blocker.addEventListener("contextmenu", (e) => e.preventDefault());
+    return blocker;
   }
 
   function startFallback(film) {
@@ -665,23 +610,18 @@ let FILMS = [];
     }
     controls.hidden = true;
     playerSurface.hidden = true;
-    playerWrap.classList.add("is-fallback");
-    setCoverImage(film);
-    setCover("loading");
+    playerCover.hidden = true;
 
-    const mounted = mountDriveIframe(playerHost, src, "Pemutar video: " + film.judul);
-    player.driveCleanup = mounted.cleanup;
+    const iframe = document.createElement("iframe");
+    iframe.src = src;
+    iframe.title = "Pemutar video: " + film.judul;
+    iframe.allow =
+      "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
 
-    let revealed = false;
-    const reveal = () => {
-      if (revealed) return;
-      revealed = true;
-      setCover("hidden");
-    };
-    mounted.iframe.addEventListener("load", reveal);
-    setTimeout(reveal, 8000);
-
-    playerHost.appendChild(buildDriveShield());
+    playerHost.appendChild(iframe);
+    playerHost.appendChild(buildDriveLinkBlocker());
   }
 
   function onPlayerReady(session) {
