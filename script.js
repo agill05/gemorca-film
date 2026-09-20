@@ -9,6 +9,10 @@ let FILMS = [];
 
   const header = $("#siteHeader");
   const hero = $("#top");
+  const heroBgA = $("#heroBg");
+  const heroBgB = $("#heroBgB");
+  const heroInner = $("#heroInner");
+  const heroDots = $("#heroDots");
   const grid = $("#movieGrid");
   const chipsBox = $("#genre");
   const navGenre = $("#navGenre");
@@ -44,6 +48,8 @@ let FILMS = [];
   const VOLUME_STEP = 10;
   const AUTOPLAY_GRACE_MS = 1800;
   const PROGRESS_INTERVAL_MS = 250;
+  const HERO_SLIDE_INTERVAL_MS = 6000;
+  const HERO_MAX_SLIDES = 6;
   const YT_ENDED = 0;
   const YT_PLAYING = 1;
   const YT_PAUSED = 2;
@@ -275,16 +281,16 @@ let FILMS = [];
     return rowsToFilms(parseCSV(text));
   }
 
-  function renderHero() {
-    const film = FILMS.find((f) => f.unggulan) || FILMS[0];
-    hero.hidden = false;
-    document.body.classList.remove("no-hero");
-    if (!film) {
-      hero.hidden = true;
-      document.body.classList.add("no-hero");
-      return;
-    }
+  let heroSlides = [];
+  let heroIndex = 0;
+  let heroTimer = null;
+  let heroActiveLayer = heroBgA;
 
+  function setHeroLayerImage(el, src) {
+    el.style.backgroundImage = "url(" + JSON.stringify(src) + ")";
+  }
+
+  function applyHeroContent(film) {
     $("#heroTitle").textContent = film.judul;
 
     const heroDesc = $("#heroDesc");
@@ -296,21 +302,104 @@ let FILMS = [];
     splitGenre(film.genre).forEach((g) => meta.appendChild(makeEl("span", "tag", g)));
     if (film.tahun) meta.appendChild(makeEl("span", "", String(film.tahun)));
 
-    const heroBg = $("#heroBg");
-    const setBg = (src) => {
-      heroBg.style.backgroundImage = "url(" + JSON.stringify(src) + ")";
-    };
+    $("#heroPlay").onclick = () => openModal(film);
+  }
+
+  function buildHeroDots() {
+    heroDots.textContent = "";
+    const show = heroSlides.length > 1;
+    heroDots.hidden = !show;
+    if (!show) return;
+    heroSlides.forEach((_, i) => {
+      const dot = makeEl("button", "hero-dot");
+      dot.type = "button";
+      dot.setAttribute("aria-label", "Slide " + (i + 1) + " dari " + heroSlides.length);
+      dot.addEventListener("click", () => {
+        showHeroSlide(i);
+        startHeroSlideshow();
+      });
+      heroDots.appendChild(dot);
+    });
+  }
+
+  function showHeroSlide(index, immediate) {
+    const film = heroSlides[index];
+    if (!film) return;
+    heroIndex = index;
+
+    Array.prototype.forEach.call(heroDots.children, (dot, i) => {
+      dot.setAttribute("aria-current", String(i === index));
+    });
+
+    if (immediate) {
+      applyHeroContent(film);
+    } else {
+      heroInner.classList.add("is-fading");
+      setTimeout(() => {
+        if (heroSlides[heroIndex] !== film) return;
+        applyHeroContent(film);
+        heroInner.classList.remove("is-fading");
+      }, 250);
+    }
+
     const base = film.posterUrl || film.bannerUrl;
-    if (base) setBg(base);
+    const nextLayer = heroActiveLayer === heroBgA ? heroBgB : heroBgA;
+    if (base) setHeroLayerImage(nextLayer, base);
+    nextLayer.classList.add("is-active");
+    heroActiveLayer.classList.remove("is-active");
+    heroActiveLayer = nextLayer;
+
     if (film.bannerUrl && film.bannerUrl !== base) {
       const probe = new Image();
       probe.onload = () => {
-        if (probe.naturalWidth > 320) setBg(film.bannerUrl);
+        if (probe.naturalWidth > 320 && heroSlides[heroIndex] === film) {
+          setHeroLayerImage(heroActiveLayer, film.bannerUrl);
+        }
       };
       probe.src = film.bannerUrl;
     }
+  }
 
-    $("#heroPlay").onclick = () => openModal(film);
+  function stopHeroSlideshow() {
+    if (heroTimer) {
+      clearInterval(heroTimer);
+      heroTimer = null;
+    }
+  }
+
+  function startHeroSlideshow() {
+    stopHeroSlideshow();
+    if (heroSlides.length < 2) return;
+    heroTimer = setInterval(() => {
+      showHeroSlide((heroIndex + 1) % heroSlides.length);
+    }, HERO_SLIDE_INTERVAL_MS);
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopHeroSlideshow();
+    else startHeroSlideshow();
+  });
+
+  function renderHero() {
+    const candidates = FILMS.filter((f) => f.posterUrl || f.bannerUrl);
+    hero.hidden = false;
+    document.body.classList.remove("no-hero");
+
+    if (!candidates.length) {
+      hero.hidden = true;
+      document.body.classList.add("no-hero");
+      stopHeroSlideshow();
+      return;
+    }
+
+    const featured = candidates.filter((f) => f.unggulan);
+    const pool = featured.length ? featured : candidates;
+    const rest = candidates.filter((f) => pool.indexOf(f) === -1);
+    heroSlides = pool.concat(rest).slice(0, HERO_MAX_SLIDES);
+
+    buildHeroDots();
+    showHeroSlide(0, true);
+    startHeroSlideshow();
   }
 
   function renderChips() {
