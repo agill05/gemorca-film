@@ -493,13 +493,28 @@ button { font: inherit; }
 
 .modal-box {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(100%, 64rem);
   max-height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);
   animation: modal-in 0.2s ease-out;
+}
+
+@media (max-width: 599px) {
+  .modal { padding: 0; }
+  .modal-box {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+  .modal-bar { padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)); }
+  .modal-info { padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
 }
 
 @keyframes modal-in {
@@ -508,6 +523,7 @@ button { font: inherit; }
 }
 
 .modal-bar {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -541,7 +557,11 @@ button { font: inherit; }
 
 .modal-close svg { width: 20px; height: 20px; }
 
-.player-wrap { background: #000; }
+.player-wrap {
+  flex: 0 0 auto;
+  min-height: 0;
+  background: #000;
+}
 
 .player-wrap:fullscreen {
   display: flex;
@@ -570,6 +590,8 @@ button { font: inherit; }
 .player {
   --yt-strip: 2.75rem;
   position: relative;
+  width: 100%;
+  max-height: 100%;
   aspect-ratio: 16 / 9;
   background: #000;
   overflow: hidden;
@@ -706,6 +728,7 @@ button { font: inherit; }
 }
 
 .controls {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -825,7 +848,12 @@ button { font: inherit; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2rem 1.5rem; }
 }
 
-.modal-info { padding: 1rem 1.25rem 1.5rem; }
+.modal-info {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.5rem;
+}
 
 .modal-meta { margin: 0 0 0.5rem; color: var(--muted); font-size: 0.9rem; }
 
