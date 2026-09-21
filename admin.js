@@ -22,7 +22,7 @@
     }
 
     var params = new URLSearchParams(window.location.search);
-    if (params.get("admin") === "1") openAdmin();
+    if (params.get("admin") === "300505") openAdmin();
 
     var clickCount = 0;
     var clickTimer = null;
