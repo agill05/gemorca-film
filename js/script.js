@@ -25,8 +25,10 @@ let FILMS = [];
   const sortBox = $("#sortBox");
   const sortSelect = $("#sortSelect");
   const searchInput = $("#searchInput");
+  const searchSuggest = $("#searchSuggest");
   const modal = $("#playerModal");
   const modalClose = $("#modalClose");
+  const modalFav = $("#modalFav");
   const modalMeta = $("#modalMeta");
   const modalDesc = $("#modalDesc");
   const playerWrap = $("#playerWrap");
@@ -45,6 +47,9 @@ let FILMS = [];
 
   const ALL_GENRES = "Semua";
   const TITLE_CACHE_PREFIX = "gemorcafilm_title_";
+  const FAVORITES_KEY = "gemorcafilm_favorites";
+  const SHEET_CACHE_KEY = "gemorcafilm_sheet_cache";
+  const SHEET_CACHE_TTL_MS = 8 * 60 * 1000;
   const REQUEST_TIMEOUT_MS = 6000;
   const SEEK_STEP_SECONDS = 10;
   const VOLUME_STEP = 10;
@@ -58,6 +63,8 @@ let FILMS = [];
   const YT_BUFFERING = 3;
   const PLAY_ICON =
     '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  const HEART_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.3 4.5 5.8 4c2-.3 3.9.6 5 2.2.2.3.5.4.8.4s.6-.1.8-.4c1.1-1.6 3-2.5 5-2.2 3.5.5 5.3 3.8 3.8 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>';
 
   const state = { query: "", genre: ALL_GENRES, sort: "newest", loadFailed: false };
   const player = {
@@ -85,6 +92,66 @@ let FILMS = [];
 
   function findFilm(id) {
     return FILMS.find((f) => String(f.id) === String(id));
+  }
+
+  function readFavorites() {
+    try {
+      const list = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+      return Array.isArray(list) ? list.map(String) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeFavorites(ids) {
+    try {
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids));
+    } catch (e) {
+      return;
+    }
+  }
+
+  let favoriteIds = readFavorites();
+
+  function isFavorite(id) {
+    return favoriteIds.includes(String(id));
+  }
+
+  function setFavButtonState(btn, active) {
+    if (!btn) return;
+    btn.classList.toggle("is-fav", active);
+    btn.setAttribute("aria-pressed", String(active));
+    btn.setAttribute("aria-label", active ? "Hapus dari favorit" : "Tambah ke favorit");
+  }
+
+  function toggleFavorite(id) {
+    const key = String(id);
+    const active = favoriteIds.includes(key);
+    favoriteIds = active ? favoriteIds.filter((f) => f !== key) : favoriteIds.concat(key);
+    writeFavorites(favoriteIds);
+    grid.querySelectorAll('.card-fav[data-fav-id="' + key + '"]').forEach((btn) => setFavButtonState(btn, !active));
+    if (player.film && String(player.film.id) === key) setFavButtonState(modalFav, !active);
+  }
+
+  function readSheetCache() {
+    try {
+      const raw = sessionStorage.getItem(SHEET_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.films)) return null;
+      if (Date.now() - parsed.savedAt > SHEET_CACHE_TTL_MS) return null;
+      return parsed.films;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeSheetCache(films) {
+    try {
+      sessionStorage.setItem(SHEET_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), films }));
+    } catch (e) {
+      return;
+    }
   }
 
   function makeEl(tag, className, text) {
@@ -444,9 +511,11 @@ let FILMS = [];
   }
 
   function createCard(film) {
+    const wrap = makeEl("div", "card-wrap");
+    wrap.dataset.id = film.id;
+
     const card = makeEl("button", "card");
     card.type = "button";
-    card.dataset.id = film.id;
     card.setAttribute("aria-label", "Tonton " + film.judul);
 
     const poster = makeEl("div", "card-poster");
@@ -476,7 +545,15 @@ let FILMS = [];
     if (film.tahun) meta.appendChild(makeEl("span", "card-year", String(film.tahun)));
 
     card.append(poster, makeEl("span", "card-title", film.judul), meta);
-    return card;
+
+    const fav = makeEl("button", "card-fav");
+    fav.type = "button";
+    fav.dataset.favId = film.id;
+    fav.innerHTML = HEART_ICON;
+    setFavButtonState(fav, isFavorite(film.id));
+
+    wrap.append(card, fav);
+    return wrap;
   }
 
   function getFilteredFilms() {
@@ -858,9 +935,18 @@ let FILMS = [];
     const metaText = [film.genre, film.tahun].filter(Boolean).join(" \u2022 ");
     modalMeta.textContent = metaText;
     modalMeta.hidden = !metaText;
+    if (modalFav) {
+      modalFav.dataset.favId = film.id;
+      setFavButtonState(modalFav, isFavorite(film.id));
+    }
 
     modal.hidden = false;
     document.body.classList.add("no-scroll");
+
+    const targetHash = "#film-" + encodeURIComponent(film.id);
+    if (window.location.hash !== targetHash) {
+      history.pushState({ filmId: film.id }, "", targetHash);
+    }
 
     const videoId = youtubeId(film.videoEmbedUrl);
     if (videoId) {
@@ -879,8 +965,23 @@ let FILMS = [];
     teardownPlayer();
     modal.hidden = true;
     document.body.classList.remove("no-scroll");
+    if (window.location.hash.indexOf("#film-") === 0) {
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
     if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
   }
+
+  function applyHashRoute() {
+    const match = /^#film-(.+)$/.exec(window.location.hash);
+    if (!match) {
+      if (!modal.hidden) closeModal();
+      return;
+    }
+    const film = findFilm(decodeURIComponent(match[1]));
+    if (film) openModal(film);
+  }
+
+  window.addEventListener("popstate", applyHashRoute);
 
   function onPlayerKey(e) {
     if (modal.hidden || !player.ready) return;
@@ -907,11 +1008,22 @@ let FILMS = [];
   }
 
   grid.addEventListener("click", (e) => {
+    const favBtn = e.target.closest(".card-fav");
+    if (favBtn) {
+      toggleFavorite(favBtn.dataset.favId);
+      return;
+    }
     const card = e.target.closest(".card");
     if (!card) return;
-    const film = findFilm(card.dataset.id);
+    const film = findFilm(card.closest(".card-wrap").dataset.id);
     if (film) openModal(film);
   });
+
+  if (modalFav) {
+    modalFav.addEventListener("click", () => {
+      if (player.film) toggleFavorite(player.film.id);
+    });
+  }
 
   chipsBox.addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
@@ -921,14 +1033,92 @@ let FILMS = [];
     renderGrid();
   });
 
+  let suggestIndex = -1;
+
+  function closeSuggestions() {
+    if (!searchSuggest) return;
+    searchSuggest.hidden = true;
+    searchSuggest.textContent = "";
+    searchInput.setAttribute("aria-expanded", "false");
+    suggestIndex = -1;
+  }
+
+  function renderSuggestions(query) {
+    if (!searchSuggest) return;
+    const q = query.trim().toLowerCase();
+    searchSuggest.textContent = "";
+    if (!q) {
+      closeSuggestions();
+      return;
+    }
+    const matches = FILMS.filter((f) => f.judul.toLowerCase().includes(q)).slice(0, 6);
+    if (!matches.length) {
+      closeSuggestions();
+      return;
+    }
+    matches.forEach((film) => {
+      const li = makeEl("li", "", film.judul);
+      li.setAttribute("role", "option");
+      li.dataset.id = film.id;
+      searchSuggest.appendChild(li);
+    });
+    suggestIndex = -1;
+    searchSuggest.hidden = false;
+    searchInput.setAttribute("aria-expanded", "true");
+  }
+
+  function pickSuggestion(li) {
+    if (!li) return;
+    searchInput.value = li.textContent;
+    state.query = li.textContent;
+    renderGrid();
+    closeSuggestions();
+  }
+
   searchInput.addEventListener("input", () => {
     state.query = searchInput.value;
     renderGrid();
+    renderSuggestions(searchInput.value);
   });
 
   searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") $("#film").scrollIntoView({ behavior: "smooth" });
+    const items = searchSuggest && !searchSuggest.hidden ? Array.from(searchSuggest.children) : [];
+    if (e.key === "Enter") {
+      if (items.length && suggestIndex >= 0 && items[suggestIndex]) {
+        e.preventDefault();
+        pickSuggestion(items[suggestIndex]);
+        return;
+      }
+      closeSuggestions();
+      $("#film").scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    if (e.key === "Escape") {
+      closeSuggestions();
+      return;
+    }
+    if (!items.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      suggestIndex = (suggestIndex + 1) % items.length;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      suggestIndex = (suggestIndex - 1 + items.length) % items.length;
+    } else {
+      return;
+    }
+    items.forEach((li, i) => li.classList.toggle("is-active", i === suggestIndex));
+    items[suggestIndex].scrollIntoView({ block: "nearest" });
   });
+
+  if (searchSuggest) {
+    searchSuggest.addEventListener("click", (e) => {
+      pickSuggestion(e.target.closest("li"));
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".search")) closeSuggestions();
+    });
+  }
 
   resetButton.addEventListener("click", resetFilter);
 
@@ -1032,6 +1222,22 @@ let FILMS = [];
   if ("ResizeObserver" in window) new ResizeObserver(syncHeaderHeight).observe(header);
   else window.addEventListener("resize", syncHeaderHeight);
 
+  function renderSkeletonGrid(count) {
+    grid.hidden = false;
+    emptyState.hidden = true;
+    const skeletons = Array.from({ length: count }, () => {
+      const card = makeEl("div", "card card-skeleton");
+      card.appendChild(makeEl("div", "card-poster"));
+      card.appendChild(makeEl("span", "card-title skel-line"));
+      const meta = makeEl("div", "card-meta");
+      meta.appendChild(makeEl("span", "skel-line skel-line--sm"));
+      meta.appendChild(makeEl("span", "skel-line skel-line--sm"));
+      card.appendChild(meta);
+      return card;
+    });
+    grid.replaceChildren(...skeletons);
+  }
+
   async function init() {
     $("#year").textContent = new Date().getFullYear();
     onScroll();
@@ -1040,10 +1246,15 @@ let FILMS = [];
     if (SHEET_CSV_URL) {
       hero.hidden = true;
       document.body.classList.add("no-hero");
-      resultCount.textContent = "Memuat film...";
+      resultCount.textContent = "";
+      renderSkeletonGrid(8);
       try {
-        const films = await loadFromSheet();
-        await fillTitles(films);
+        let films = readSheetCache();
+        if (!films) {
+          films = await loadFromSheet();
+          await fillTitles(films);
+          writeSheetCache(films);
+        }
         FILMS = sortFilms(films, "newest");
       } catch (err) {
         state.loadFailed = true;
@@ -1054,7 +1265,14 @@ let FILMS = [];
     renderHero();
     renderChips();
     renderGrid();
+    applyHashRoute();
   }
 
   init();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    });
+  }
 })();

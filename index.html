@@ -12,6 +12,8 @@
   <meta property="og:type" content="website">
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23d62839'/%3E%3Cpath d='M12 9l11 7-11 7z' fill='white'/%3E%3C/svg%3E">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/img/icon-192.png">
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +21,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 
 <body>
@@ -47,7 +49,9 @@
           <path d="M20 20l-3.5-3.5" />
         </svg>
         <input type="search" id="searchInput" placeholder="Cari judul atau genre" aria-label="Cari film"
-          autocomplete="off">
+          autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"
+          aria-controls="searchSuggest">
+        <ul class="search-suggest" id="searchSuggest" role="listbox" hidden></ul>
       </div>
     </div>
   </header>
@@ -115,12 +119,21 @@
     <div class="modal-box">
       <div class="modal-bar">
         <h3 id="modalTitle"></h3>
-        <button type="button" class="modal-close" id="modalClose" aria-label="Tutup pemutar video">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-            aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
+        <div class="modal-bar__actions">
+          <button type="button" class="modal-fav" id="modalFav" aria-label="Tambah ke favorit" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path
+                d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.3 4.5 5.8 4c2-.3 3.9.6 5 2.2.2.3.5.4.8.4s.6-.1.8-.4c1.1-1.6 3-2.5 5-2.2 3.5.5 5.3 3.8 3.8 7.3-2.5 4.6-10 9.2-10 9.2z" />
+            </svg>
+          </button>
+          <button type="button" class="modal-close" id="modalClose" aria-label="Tutup pemutar video">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="player-wrap" id="playerWrap">
         <div class="player">
@@ -185,7 +198,7 @@
     </div>
   </div>
 
-  <script src="js/script.js"></script>
+  <script src="js/script.js?v=8"></script>
 
   <div class="admin-modal" id="adminModal" hidden>
     <div class="admin-modal__backdrop" data-admin-close></div>
@@ -263,13 +276,24 @@
               <input type="url" id="adminVideo" inputmode="url" required>
               <span class="admin-hint">Tautan https dari YouTube atau Google Drive.</span>
             </div>
+            <div class="admin-video-preview admin-field--full" id="adminVideoPreview" hidden>
+              <iframe id="adminVideoFrame" src="" title="Pratinjau video" allow="autoplay; encrypted-media"
+                referrerpolicy="no-referrer" loading="lazy"></iframe>
+              <span>Pratinjau video</span>
+            </div>
             <div class="admin-field">
               <label for="adminJudul">Judul</label>
               <input type="text" id="adminJudul">
             </div>
             <div class="admin-field">
-              <label for="adminGenre">Genre</label>
-              <input type="text" id="adminGenre" placeholder="Aksi, Drama">
+              <label for="adminGenreEntry">Genre</label>
+              <div class="tag-input" id="adminGenreTagInput">
+                <div class="tag-input__tags" id="adminGenreTags"></div>
+                <input type="text" id="adminGenreEntry" placeholder="Ketik genre, Enter untuk tambah"
+                  autocomplete="off">
+                <ul class="tag-input__suggest" id="adminGenreSuggest" role="listbox" hidden></ul>
+              </div>
+              <input type="hidden" id="adminGenre">
             </div>
             <div class="admin-field">
               <label for="adminTahun">Tahun</label>
@@ -303,7 +327,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <script src="js/admin.js"></script>
+  <script src="js/admin.js?v=4"></script>
 </body>
 
 </html>

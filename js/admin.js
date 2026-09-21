@@ -34,8 +34,13 @@
     var submitBtn = byId("adminSubmit");
     var cancelBtn = byId("adminCancel");
     var videoInput = byId("adminVideo");
+    var videoPreview = byId("adminVideoPreview");
+    var videoFrame = byId("adminVideoFrame");
     var judulInput = byId("adminJudul");
     var genreInput = byId("adminGenre");
+    var genreEntry = byId("adminGenreEntry");
+    var genreTagsBox = byId("adminGenreTags");
+    var genreSuggest = byId("adminGenreSuggest");
     var tahunInput = byId("adminTahun");
     var posterInput = byId("adminPoster");
     var deskripsiInput = byId("adminDeskripsi");
@@ -51,6 +56,9 @@
     var saving = false;
     var lastFocus = null;
     var previewTimer = null;
+    var videoPreviewTimer = null;
+    var genreTags = [];
+    var genreSuggestIndex = -1;
 
     var Dialog = null;
     var Toast = null;
@@ -553,10 +561,135 @@
         posterImg.src = url;
     }
 
+    function updateVideoPreview() {
+        var url = videoInput.value.trim();
+        var api = window.GemorcaVideo;
+        var embedUrl = api && typeof api.buildEmbedUrl === "function" ? api.buildEmbedUrl(url) : "";
+        if (!embedUrl) {
+            videoPreview.hidden = true;
+            videoFrame.removeAttribute("src");
+            return;
+        }
+        videoFrame.src = embedUrl;
+        videoPreview.hidden = false;
+    }
+
+    function splitGenreText(text) {
+        return String(text || "")
+            .split(",")
+            .map(function (g) {
+                return g.trim();
+            })
+            .filter(Boolean);
+    }
+
+    function syncGenreHidden() {
+        genreInput.value = genreTags.join(", ");
+    }
+
+    function renderGenreTags() {
+        genreTagsBox.textContent = "";
+        genreTags.forEach(function (tag) {
+            var chip = el("span", "tag-chip");
+            chip.appendChild(document.createTextNode(tag));
+            var remove = el("button", "tag-chip__remove", "\u00d7");
+            remove.type = "button";
+            remove.setAttribute("aria-label", "Hapus genre " + tag);
+            remove.dataset.tag = tag;
+            chip.appendChild(remove);
+            genreTagsBox.appendChild(chip);
+        });
+    }
+
+    function setGenreTags(tags) {
+        var seen = {};
+        genreTags = tags.filter(function (tag) {
+            var key = tag.toLowerCase();
+            if (!tag || seen[key]) return false;
+            seen[key] = true;
+            return true;
+        });
+        renderGenreTags();
+        syncGenreHidden();
+    }
+
+    function addGenreTag(raw) {
+        var tag = String(raw || "").trim();
+        if (!tag) return;
+        var exists = genreTags.some(function (t) {
+            return t.toLowerCase() === tag.toLowerCase();
+        });
+        if (!exists) setGenreTags(genreTags.concat(tag));
+        genreEntry.value = "";
+        closeGenreSuggestions();
+    }
+
+    function removeGenreTag(tag) {
+        setGenreTags(
+            genreTags.filter(function (t) {
+                return t !== tag;
+            })
+        );
+    }
+
+    function collectKnownGenres() {
+        var seen = {};
+        var list = [];
+        currentItems.forEach(function (item) {
+            splitGenreText(item.genre).forEach(function (g) {
+                var key = g.toLowerCase();
+                if (!seen[key]) {
+                    seen[key] = true;
+                    list.push(g);
+                }
+            });
+        });
+        return list;
+    }
+
+    function closeGenreSuggestions() {
+        genreSuggest.hidden = true;
+        genreSuggest.textContent = "";
+        genreSuggestIndex = -1;
+    }
+
+    function renderGenreSuggestions(query) {
+        var q = query.trim().toLowerCase();
+        genreSuggest.textContent = "";
+        if (!q) {
+            closeGenreSuggestions();
+            return;
+        }
+        var used = {};
+        genreTags.forEach(function (t) {
+            used[t.toLowerCase()] = true;
+        });
+        var matches = collectKnownGenres()
+            .filter(function (g) {
+                return g.toLowerCase().indexOf(q) !== -1 && !used[g.toLowerCase()];
+            })
+            .slice(0, 6);
+        if (!matches.length) {
+            closeGenreSuggestions();
+            return;
+        }
+        matches.forEach(function (g) {
+            var li = el("li", "", g);
+            li.setAttribute("role", "option");
+            genreSuggest.appendChild(li);
+        });
+        genreSuggestIndex = -1;
+        genreSuggest.hidden = false;
+    }
+
     function openForm(item) {
         form.reset();
         posterPreview.hidden = true;
         posterImg.removeAttribute("src");
+        videoPreview.hidden = true;
+        videoFrame.removeAttribute("src");
+        genreEntry.value = "";
+        closeGenreSuggestions();
         editingOriginal = null;
 
         if (item) {
@@ -564,16 +697,18 @@
             rowInput.value = item.row;
             videoInput.value = item.video || "";
             judulInput.value = item.judul || "";
-            genreInput.value = item.genre || "";
+            setGenreTags(splitGenreText(item.genre));
             tahunInput.value = item.tahun || "";
             posterInput.value = item.poster || "";
             deskripsiInput.value = item.deskripsi || "";
             unggulanInput.checked = isFeatured(item);
             editingOriginal = item;
             updatePosterPreview();
+            updateVideoPreview();
         } else {
             formTitle.textContent = "Tambah Film";
             rowInput.value = "";
+            setGenreTags([]);
         }
         formSnapshot = serializeForm();
         showView("form");
@@ -772,6 +907,63 @@
     posterInput.addEventListener("input", function () {
         clearTimeout(previewTimer);
         previewTimer = setTimeout(updatePosterPreview, 350);
+    });
+
+    videoInput.addEventListener("input", function () {
+        clearTimeout(videoPreviewTimer);
+        videoPreviewTimer = setTimeout(updateVideoPreview, 350);
+    });
+
+    genreEntry.addEventListener("input", function () {
+        renderGenreSuggestions(genreEntry.value);
+    });
+
+    genreEntry.addEventListener("keydown", function (e) {
+        var items = genreSuggest.hidden ? [] : Array.prototype.slice.call(genreSuggest.children);
+        if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
+            if (items.length && genreSuggestIndex >= 0 && items[genreSuggestIndex]) {
+                addGenreTag(items[genreSuggestIndex].textContent);
+            } else {
+                addGenreTag(genreEntry.value);
+            }
+            return;
+        }
+        if (e.key === "Backspace" && !genreEntry.value && genreTags.length) {
+            removeGenreTag(genreTags[genreTags.length - 1]);
+            return;
+        }
+        if (e.key === "Escape") {
+            closeGenreSuggestions();
+            return;
+        }
+        if (!items.length) return;
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            genreSuggestIndex = (genreSuggestIndex + 1) % items.length;
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            genreSuggestIndex = (genreSuggestIndex - 1 + items.length) % items.length;
+        } else {
+            return;
+        }
+        items.forEach(function (li, i) {
+            li.classList.toggle("is-active", i === genreSuggestIndex);
+        });
+    });
+
+    genreSuggest.addEventListener("click", function (e) {
+        var li = e.target.closest("li");
+        if (li) addGenreTag(li.textContent);
+    });
+
+    genreTagsBox.addEventListener("click", function (e) {
+        var removeBtn = e.target.closest(".tag-chip__remove");
+        if (removeBtn) removeGenreTag(removeBtn.dataset.tag);
+    });
+
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest("#adminGenreTagInput")) closeGenreSuggestions();
     });
 
     buildSwal();
