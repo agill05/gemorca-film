@@ -1594,22 +1594,6 @@ button {
   background: var(--surface-2);
 }
 
-.admin-video-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.admin-video-preview iframe {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-2);
-}
-
 .tag-input {
   position: relative;
   display: flex;

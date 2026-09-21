@@ -34,8 +34,6 @@
     var submitBtn = byId("adminSubmit");
     var cancelBtn = byId("adminCancel");
     var videoInput = byId("adminVideo");
-    var videoPreview = byId("adminVideoPreview");
-    var videoFrame = byId("adminVideoFrame");
     var judulInput = byId("adminJudul");
     var genreInput = byId("adminGenre");
     var genreEntry = byId("adminGenreEntry");
@@ -56,7 +54,6 @@
     var saving = false;
     var lastFocus = null;
     var previewTimer = null;
-    var videoPreviewTimer = null;
     var genreTags = [];
     var genreSuggestIndex = -1;
 
@@ -561,19 +558,6 @@
         posterImg.src = url;
     }
 
-    function updateVideoPreview() {
-        var url = videoInput.value.trim();
-        var api = window.GemorcaVideo;
-        var embedUrl = api && typeof api.buildEmbedUrl === "function" ? api.buildEmbedUrl(url) : "";
-        if (!embedUrl) {
-            videoPreview.hidden = true;
-            videoFrame.removeAttribute("src");
-            return;
-        }
-        videoFrame.src = embedUrl;
-        videoPreview.hidden = false;
-    }
-
     function splitGenreText(text) {
         return String(text || "")
             .split(",")
@@ -686,8 +670,6 @@
         form.reset();
         posterPreview.hidden = true;
         posterImg.removeAttribute("src");
-        videoPreview.hidden = true;
-        videoFrame.removeAttribute("src");
         genreEntry.value = "";
         closeGenreSuggestions();
         editingOriginal = null;
@@ -704,7 +686,6 @@
             unggulanInput.checked = isFeatured(item);
             editingOriginal = item;
             updatePosterPreview();
-            updateVideoPreview();
         } else {
             formTitle.textContent = "Tambah Film";
             rowInput.value = "";
@@ -907,11 +888,6 @@
     posterInput.addEventListener("input", function () {
         clearTimeout(previewTimer);
         previewTimer = setTimeout(updatePosterPreview, 350);
-    });
-
-    videoInput.addEventListener("input", function () {
-        clearTimeout(videoPreviewTimer);
-        videoPreviewTimer = setTimeout(updateVideoPreview, 350);
     });
 
     genreEntry.addEventListener("input", function () {
