@@ -133,6 +133,8 @@ let FILMS = [];
     return "";
   }
 
+  window.GemorcaVideo = { buildEmbedUrl: buildEmbedUrl, youtubeId: youtubeId };
+
   function parseCSV(text) {
     const rows = [];
     let row = [];

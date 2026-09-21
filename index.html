@@ -13,13 +13,13 @@
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23d62839'/%3E%3Cpath d='M12 9l11 7-11 7z' fill='white'/%3E%3C/svg%3E">
 
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3">
-  <link rel="stylesheet" href="admin.css?v=1">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 
 <body>
@@ -175,49 +175,125 @@
     </div>
   </div>
 
-  <script src="script.js?v=3"></script>
+  <script src="script.js?v=4"></script>
 
   <div class="admin-modal" id="adminModal" hidden>
     <div class="admin-modal__backdrop" data-admin-close></div>
-    <div class="admin-modal__panel">
-      <button type="button" class="admin-modal__close" id="adminClose" aria-label="Tutup">&times;</button>
+    <div class="admin-modal__panel" id="adminPanel" role="dialog" aria-modal="true" aria-labelledby="adminLoginTitle"
+      tabindex="-1">
+      <button type="button" class="admin-modal__close" id="adminClose" aria-label="Tutup panel admin">&times;</button>
 
-      <form id="adminLoginForm">
-        <h2>Masuk Admin</h2>
-        <label>PIN Rahasia<input type="password" id="adminPin" required></label>
-        <p class="admin-modal__msg" id="adminLoginMsg" hidden></p>
-        <div class="admin-modal__actions">
-          <button type="submit" class="btn btn-primary" id="adminLoginSubmit">Masuk</button>
+      <form class="admin-view admin-view--login" id="adminLoginForm" novalidate>
+        <div class="admin-view__head">
+          <h2 id="adminLoginTitle">Masuk Admin</h2>
+        </div>
+        <div class="admin-view__body">
+          <div class="admin-field">
+            <label for="adminPin">PIN Rahasia</label>
+            <div class="admin-pin">
+              <input type="password" id="adminPin" autocomplete="off" autocapitalize="off" spellcheck="false" required
+                aria-describedby="adminLoginMsg">
+              <button type="button" class="admin-pin__toggle" id="adminPinToggle" aria-label="Tampilkan PIN"
+                aria-pressed="false">
+                <svg class="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg class="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M3 3l18 18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <p class="admin-modal__msg" id="adminLoginMsg" role="alert" hidden></p>
+        </div>
+        <div class="admin-view__foot">
+          <button type="submit" class="btn btn-primary" id="adminLoginSubmit">
+            <span class="btn__spinner" aria-hidden="true"></span>
+            <span class="btn__label">Masuk</span>
+          </button>
         </div>
       </form>
 
-      <div id="adminListView" hidden>
-        <h2>Daftar Film</h2>
-        <div id="adminList"></div>
-        <div class="admin-modal__actions">
+      <div class="admin-view" id="adminListView" hidden>
+        <div class="admin-view__head">
+          <h2 id="adminListTitle">Daftar Film</h2>
+          <span class="admin-count" id="adminCount" aria-live="polite"></span>
+        </div>
+        <div class="admin-toolbar">
+          <div class="admin-search" role="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+            <input type="search" id="adminSearch" placeholder="Cari judul atau genre" aria-label="Cari film di daftar"
+              autocomplete="off">
+          </div>
+        </div>
+        <div class="admin-view__body admin-view__body--list" id="adminList"></div>
+        <div class="admin-view__foot">
           <button type="button" class="btn btn-primary" id="adminAddNew">+ Tambah Film</button>
         </div>
       </div>
 
-      <form id="adminForm" hidden autocomplete="off">
-        <h2 id="adminFormTitle">Tambah Film</h2>
+      <form class="admin-view" id="adminForm" hidden autocomplete="off" novalidate>
+        <div class="admin-view__head">
+          <h2 id="adminFormTitle">Tambah Film</h2>
+        </div>
         <input type="hidden" id="adminRow" value="">
-        <label>URL Video (YouTube/Drive)<input type="url" id="adminVideo" required></label>
-        <label>Judul<input type="text" id="adminJudul"></label>
-        <label>Genre<input type="text" id="adminGenre" placeholder="Aksi, Drama"></label>
-        <label>Tahun<input type="number" id="adminTahun"></label>
-        <label>URL Poster<input type="url" id="adminPoster"></label>
-        <label>Deskripsi/Sinopsis<textarea id="adminDeskripsi" rows="3"></textarea></label>
-        <label class="admin-modal__checkbox"><input type="checkbox" id="adminUnggulan"> Unggulan</label>
-        <p class="admin-modal__msg" id="adminMsg" hidden></p>
-        <div class="admin-modal__actions">
+        <div class="admin-view__body">
+          <div class="admin-grid">
+            <div class="admin-field admin-field--full">
+              <label for="adminVideo">URL Video</label>
+              <input type="url" id="adminVideo" inputmode="url" required>
+              <span class="admin-hint">Tautan https dari YouTube atau Google Drive.</span>
+            </div>
+            <div class="admin-field">
+              <label for="adminJudul">Judul</label>
+              <input type="text" id="adminJudul">
+            </div>
+            <div class="admin-field">
+              <label for="adminGenre">Genre</label>
+              <input type="text" id="adminGenre" placeholder="Aksi, Drama">
+            </div>
+            <div class="admin-field">
+              <label for="adminTahun">Tahun</label>
+              <input type="number" id="adminTahun" inputmode="numeric" min="1900" step="1">
+            </div>
+            <div class="admin-field">
+              <label for="adminPoster">URL Poster</label>
+              <input type="url" id="adminPoster" inputmode="url">
+            </div>
+            <div class="admin-poster-preview admin-field--full" id="adminPosterPreview" hidden>
+              <img id="adminPosterImg" alt="Pratinjau poster" referrerpolicy="no-referrer">
+              <span>Pratinjau poster</span>
+            </div>
+            <div class="admin-field admin-field--full">
+              <label for="adminDeskripsi">Deskripsi / Sinopsis</label>
+              <textarea id="adminDeskripsi" rows="3"></textarea>
+            </div>
+            <label class="admin-check admin-field--full"><input type="checkbox" id="adminUnggulan"> Tampilkan sebagai
+              film unggulan</label>
+          </div>
+        </div>
+        <div class="admin-view__foot">
           <button type="button" class="btn btn-ghost" id="adminCancel">Batal</button>
-          <button type="submit" class="btn btn-primary" id="adminSubmit">Simpan</button>
+          <button type="submit" class="btn btn-primary" id="adminSubmit">
+            <span class="btn__spinner" aria-hidden="true"></span>
+            <span class="btn__label">Simpan</span>
+          </button>
         </div>
       </form>
     </div>
   </div>
-  <script src="admin.js?v=2"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <script src="admin.js?v=3"></script>
 </body>
 
 </html>
