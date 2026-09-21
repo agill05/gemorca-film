@@ -240,11 +240,15 @@ button {
   background-size: cover;
   background-position: center 25%;
   opacity: 0;
-  transition: opacity 1s ease;
+  transition: opacity 0.7s ease;
 }
 
 .hero-bg.is-active {
   opacity: 1;
+}
+
+.hero-bg.is-upgrading {
+  transition: opacity 0.25s ease;
 }
 
 .hero::before {
@@ -259,7 +263,7 @@ button {
 
 .hero-inner {
   max-width: 34rem;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.25s ease;
 }
 
 .hero-inner.is-fading {
@@ -454,7 +458,7 @@ button {
 
 @media (max-width: 767px) {
   .sort select {
-    font-size: 1rem; /* 16px: mencegah zoom otomatis di iOS Safari */
+    font-size: 1rem;
   }
 }
 
@@ -1125,7 +1129,6 @@ button {
   }
 }
 
-/* layar pendek (laptop kecil, HP landscape): kurangi ruang cadangan info */
 @media (min-width: 600px) and (max-height: 560px) {
   .modal-box {
     width: min(100%, 72rem, max(24rem, calc((100vh - 10rem) * 16 / 9)));
@@ -1175,13 +1178,6 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
-
-/* ==========================================================================
-   Panel admin
-   Mobile (< 640px)  : panel login kartu kecil; daftar & form layar penuh
-   Tablet (>= 640px) : panel 44rem, tabel, form 2 kolom
-   Desktop (>= 1024px): panel 52rem
-   ========================================================================== */
 
 .admin-sr {
   position: absolute;
@@ -1253,8 +1249,6 @@ button {
   background: var(--accent);
 }
 
-/* ---- struktur view: head tetap, body scroll, foot tetap ---- */
-
 .admin-view {
   display: flex;
   flex: 1 1 auto;
@@ -1317,8 +1311,6 @@ button {
   width: 100%;
 }
 
-/* ---- tombol proses ---- */
-
 .btn__spinner {
   display: none;
   flex: none;
@@ -1344,8 +1336,6 @@ button {
   cursor: progress;
 }
 
-/* ---- field ---- */
-
 .admin-field {
   display: flex;
   flex-direction: column;
@@ -1369,7 +1359,7 @@ button {
   background: var(--bg);
   color: var(--text);
   font: inherit;
-  font-size: 1rem; /* 16px: mencegah zoom otomatis di iOS Safari */
+  font-size: 1rem;
 }
 
 .admin-field textarea {
@@ -1451,8 +1441,6 @@ button {
   color: var(--accent-strong);
 }
 
-/* ---- form ---- */
-
 .admin-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1491,8 +1479,6 @@ button {
   height: 1.25rem;
   accent-color: var(--accent);
 }
-
-/* ---- daftar ---- */
 
 .admin-count {
   font-size: 0.85rem;
@@ -1646,8 +1632,6 @@ button {
   }
 }
 
-/* ---- tablet ---- */
-
 @media (min-width: 640px) {
   .admin-modal.is-wide .admin-modal__panel {
     width: min(44rem, 100%);
@@ -1665,15 +1649,11 @@ button {
   }
 }
 
-/* ---- desktop ---- */
-
 @media (min-width: 1024px) {
   .admin-modal.is-wide .admin-modal__panel {
     width: min(52rem, 100%);
   }
 }
-
-/* ---- mobile: layar penuh + daftar jadi kartu ---- */
 
 @media (max-width: 639px) {
   .admin-view__head {
@@ -1795,8 +1775,6 @@ button {
     font-size: 0.9rem;
   }
 }
-
-/* ---- tema SweetAlert2 (mengikuti token situs) ---- */
 
 .swal2-popup.admin-swal {
   border: 1px solid var(--line);

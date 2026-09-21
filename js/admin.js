@@ -55,8 +55,6 @@
     var Dialog = null;
     var Toast = null;
 
-    /* ---------- util ---------- */
-
     function el(tag, className, text) {
         var node = document.createElement(tag);
         if (className) node.className = className;
@@ -98,8 +96,6 @@
         var id = api && typeof api.youtubeId === "function" ? api.youtubeId(String(item.video || "")) : "";
         return id ? "https://img.youtube.com/vi/" + id + "/hqdefault.jpg" : "";
     }
-
-    /* ---------- SweetAlert2 ---------- */
 
     function buildSwal() {
         if (!window.Swal) return;
@@ -156,8 +152,6 @@
         });
     }
 
-    /* ---------- request ---------- */
-
     function serverFail(message) {
         var err = new Error(message);
         err.isServer = true;
@@ -208,8 +202,6 @@
         return "?action=list&pin=" + encodeURIComponent(pin);
     }
 
-    /* ---------- tombol proses ---------- */
-
     function setLoading(btn, isLoading, loadingText) {
         var label = btn.querySelector(".btn__label");
         if (!btn.hasAttribute("data-label")) btn.setAttribute("data-label", label.textContent);
@@ -230,8 +222,6 @@
         setLoading(submitBtn, isSaving, "Menyimpan...");
         cancelBtn.disabled = isSaving;
     }
-
-    /* ---------- tampilan & fokus ---------- */
 
     function showView(view) {
         currentView = view;
@@ -335,8 +325,6 @@
         }
         closeAdmin();
     }
-
-    /* ---------- daftar film ---------- */
 
     function renderLoading() {
         listBox.textContent = "";
@@ -473,7 +461,6 @@
             });
     }
 
-    /* Ambil ulang daftar dan pastikan baris masih milik film yang sama. */
     function verifyRow(item) {
         return request(listUrl(currentPin)).then(function (data) {
             if (!data.ok) throw serverFail(data.error || "Gagal memeriksa data terbaru.");
@@ -529,8 +516,6 @@
             loadList();
         });
     }
-
-    /* ---------- form ---------- */
 
     function readForm() {
         return {
@@ -696,8 +681,6 @@
                 setSaving(false);
             });
     });
-
-    /* ---------- event ---------- */
 
     var clickCount = 0;
     var clickTimer = null;

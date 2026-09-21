@@ -326,6 +326,16 @@ let FILMS = [];
     });
   }
 
+  function upgradeHeroBg(layer, src) {
+    layer.classList.add("is-upgrading");
+    layer.classList.remove("is-active");
+    setTimeout(() => {
+      setHeroLayerImage(layer, src);
+      requestAnimationFrame(() => layer.classList.add("is-active"));
+      setTimeout(() => layer.classList.remove("is-upgrading"), 250);
+    }, 250);
+  }
+
   function showHeroSlide(index, immediate) {
     const film = heroSlides[index];
     if (!film) return;
@@ -357,7 +367,7 @@ let FILMS = [];
       const probe = new Image();
       probe.onload = () => {
         if (probe.naturalWidth > 320 && heroSlides[heroIndex] === film) {
-          setHeroLayerImage(heroActiveLayer, film.bannerUrl);
+          upgradeHeroBg(heroActiveLayer, film.bannerUrl);
         }
       };
       probe.src = film.bannerUrl;
@@ -383,6 +393,11 @@ let FILMS = [];
     if (document.hidden) stopHeroSlideshow();
     else startHeroSlideshow();
   });
+
+  hero.addEventListener("mouseenter", stopHeroSlideshow);
+  hero.addEventListener("mouseleave", startHeroSlideshow);
+  hero.addEventListener("focusin", stopHeroSlideshow);
+  hero.addEventListener("focusout", startHeroSlideshow);
 
   function renderHero() {
     const candidates = FILMS.filter((f) => f.posterUrl || f.bannerUrl);
@@ -987,8 +1002,6 @@ let FILMS = [];
     return Number.isFinite(y) ? y : -Infinity;
   }
 
-  // Mode: "newest" (tahun terbaru), "oldest" (tahun terlama), "az" (judul).
-  // Tanpa tahun selalu di akhir. Seri: urutan Sheet (id).
   function compareFilms(mode) {
     return (a, b) => {
       if (mode === "az") return titleCollator.compare(a.judul, b.judul) || a.id - b.id;
@@ -1012,8 +1025,6 @@ let FILMS = [];
     renderGrid();
   });
 
-  // Tinggi header berubah menurut lebar layar (di HP menjadi 3 baris).
-  // Ukur langsung agar scroll menu (Film, Genre) dan jarak konten tidak tertutup header.
   function syncHeaderHeight() {
     document.documentElement.style.setProperty("--header-h", header.offsetHeight + "px");
   }
