@@ -88,7 +88,6 @@
         if (e.key === "Escape" && !modal.hidden) closeAdmin();
     });
 
-    // GET (query) untuk baca data, POST (payload) untuk create/update/delete.
     function fetchApi(query, payload) {
         if (payload) {
             return fetch(WEBAPP_URL, {
