@@ -917,3 +917,106 @@ button { font: inherit; }
     transition-duration: 0.01ms !important;
   }
 }
+
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.admin-modal[hidden] { display: none; }
+
+.admin-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 6, 8, 0.85);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.admin-modal__panel {
+  position: relative;
+  width: min(26rem, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  animation: modal-in 0.2s ease-out;
+}
+
+.admin-modal__panel h2 {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.admin-modal__panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.admin-modal__panel input,
+.admin-modal__panel textarea {
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+}
+
+.admin-modal__panel input:focus-visible,
+.admin-modal__panel textarea:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.admin-modal__panel textarea { resize: vertical; }
+
+.admin-modal__checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  color: var(--soft) !important;
+  font-size: 0.9rem !important;
+}
+
+.admin-modal__close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-modal__close:hover { background: var(--accent); }
+
+.admin-modal__msg { margin: 0; font-size: 0.85rem; }
+.admin-modal__msg.is-success { color: #4ade80; }
+.admin-modal__msg.is-error { color: var(--accent-strong); }
+
+.admin-modal__actions { display: flex; justify-content: flex-end; }
+
+.admin-modal__actions .btn { padding: 0.6rem 1.3rem; font-size: 0.9rem; }

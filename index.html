@@ -15,6 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="admin.css?v=1">
 </head>
 <body>
 
@@ -143,5 +144,26 @@
   </div>
 
   <script src="script.js?v=3"></script>
+
+  <div class="admin-modal" id="adminModal" hidden>
+    <div class="admin-modal__backdrop" data-admin-close></div>
+    <form class="admin-modal__panel" id="adminForm" autocomplete="off">
+      <button type="button" class="admin-modal__close" id="adminClose" aria-label="Tutup">&times;</button>
+      <h2>Tambah Film</h2>
+      <label>PIN Rahasia<input type="password" id="adminPin" required></label>
+      <label>URL Video (YouTube/Drive)<input type="url" id="adminVideo" required></label>
+      <label>Judul<input type="text" id="adminJudul"></label>
+      <label>Genre<input type="text" id="adminGenre" placeholder="Aksi, Drama"></label>
+      <label>Tahun<input type="number" id="adminTahun"></label>
+      <label>URL Poster<input type="url" id="adminPoster"></label>
+      <label>Deskripsi/Sinopsis<textarea id="adminDeskripsi" rows="3"></textarea></label>
+      <label class="admin-modal__checkbox"><input type="checkbox" id="adminUnggulan"> Unggulan</label>
+      <p class="admin-modal__msg" id="adminMsg" hidden></p>
+      <div class="admin-modal__actions">
+        <button type="submit" class="btn btn-primary" id="adminSubmit">Simpan</button>
+      </div>
+    </form>
+  </div>
+  <script src="admin.js?v=1"></script>
 </body>
 </html>
