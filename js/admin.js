@@ -35,7 +35,7 @@
     var cancelBtn = byId("adminCancel");
     var videoInput = byId("adminVideo");
     var videoPreview = byId("adminVideoPreview");
-    // var videoFrame = byId("adminVideoFrame");
+    var videoFrame = byId("adminVideoFrame");
     var judulInput = byId("adminJudul");
     var genreInput = byId("adminGenre");
     var genreEntry = byId("adminGenreEntry");
