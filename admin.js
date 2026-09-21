@@ -1,6 +1,6 @@
 (function () {
     "use strict";
-//
+
     var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbztuRzf8VwANcWukQkq9imZ2dSVcsUJ4Lz2z-5CbL0696Ij4OKitCJtMll-B2fDFZCb_A/exec";
 
     var modal = document.getElementById("adminModal");
