@@ -19,7 +19,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 
 <body>
@@ -78,7 +78,17 @@
       <div class="container">
         <div class="section-head">
           <h2 id="sectionTitle">Semua Film</h2>
-          <span class="count" id="resultCount"></span>
+          <div class="section-tools">
+            <span class="count" id="resultCount"></span>
+            <label class="sort" id="sortBox" hidden>
+              <span class="sort-label">Urutkan</span>
+              <select id="sortSelect">
+                <option value="newest">Tahun terbaru</option>
+                <option value="oldest">Tahun terlama</option>
+                <option value="az">Judul A–Z</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         <div class="chips" id="genre" role="group" aria-label="Filter genre"></div>
@@ -175,7 +185,7 @@
     </div>
   </div>
 
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=7"></script>
 
   <div class="admin-modal" id="adminModal" hidden>
     <div class="admin-modal__backdrop" data-admin-close></div>

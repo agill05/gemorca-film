@@ -22,6 +22,8 @@ let FILMS = [];
   const resetButton = $("#resetFilter");
   const sectionTitle = $("#sectionTitle");
   const resultCount = $("#resultCount");
+  const sortBox = $("#sortBox");
+  const sortSelect = $("#sortSelect");
   const searchInput = $("#searchInput");
   const modal = $("#playerModal");
   const modalClose = $("#modalClose");
@@ -57,7 +59,7 @@ let FILMS = [];
   const PLAY_ICON =
     '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 
-  const state = { query: "", genre: ALL_GENRES, loadFailed: false };
+  const state = { query: "", genre: ALL_GENRES, sort: "newest", loadFailed: false };
   const player = {
     yt: null,
     session: 0,
@@ -464,12 +466,13 @@ let FILMS = [];
 
   function getFilteredFilms() {
     const q = state.query.trim().toLowerCase();
-    return FILMS.filter((film) => {
+    const matches = FILMS.filter((film) => {
       const genreOk =
         state.genre === ALL_GENRES || splitGenre(film.genre).includes(state.genre);
       const text = (film.judul + " " + film.genre + " " + (film.tahun || "")).toLowerCase();
       return genreOk && (!q || text.includes(q));
     });
+    return sortFilms(matches, state.sort);
   }
 
   function renderGrid() {
@@ -491,6 +494,7 @@ let FILMS = [];
       setText(emptyText, "Coba kata kunci lain atau pilih genre berbeda.");
     }
     if (resetButton) resetButton.hidden = noData;
+    sortBox.hidden = FILMS.length < 2;
 
     const q = state.query.trim();
     if (q) sectionTitle.textContent = "Hasil untuk \u201C" + q + "\u201D";
@@ -976,9 +980,51 @@ let FILMS = [];
   const onScroll = () => header.classList.toggle("is-scrolled", window.scrollY > 20);
   window.addEventListener("scroll", onScroll, { passive: true });
 
+  const titleCollator = new Intl.Collator("id", { numeric: true, sensitivity: "base" });
+
+  function yearOf(film) {
+    const y = parseInt(String(film.tahun || "").trim(), 10);
+    return Number.isFinite(y) ? y : -Infinity;
+  }
+
+  // Mode: "newest" (tahun terbaru), "oldest" (tahun terlama), "az" (judul).
+  // Tanpa tahun selalu di akhir. Seri: urutan Sheet (id).
+  function compareFilms(mode) {
+    return (a, b) => {
+      if (mode === "az") return titleCollator.compare(a.judul, b.judul) || a.id - b.id;
+      const ya = yearOf(a);
+      const yb = yearOf(b);
+      if (ya !== yb) {
+        if (ya === -Infinity) return 1;
+        if (yb === -Infinity) return -1;
+        return mode === "oldest" ? ya - yb : yb - ya;
+      }
+      return a.id - b.id;
+    };
+  }
+
+  function sortFilms(films, mode) {
+    return films.slice().sort(compareFilms(mode));
+  }
+
+  sortSelect.addEventListener("change", () => {
+    state.sort = sortSelect.value;
+    renderGrid();
+  });
+
+  // Tinggi header berubah menurut lebar layar (di HP menjadi 3 baris).
+  // Ukur langsung agar scroll menu (Film, Genre) dan jarak konten tidak tertutup header.
+  function syncHeaderHeight() {
+    document.documentElement.style.setProperty("--header-h", header.offsetHeight + "px");
+  }
+
+  if ("ResizeObserver" in window) new ResizeObserver(syncHeaderHeight).observe(header);
+  else window.addEventListener("resize", syncHeaderHeight);
+
   async function init() {
     $("#year").textContent = new Date().getFullYear();
     onScroll();
+    syncHeaderHeight();
 
     if (SHEET_CSV_URL) {
       hero.hidden = true;
@@ -987,7 +1033,7 @@ let FILMS = [];
       try {
         const films = await loadFromSheet();
         await fillTitles(films);
-        FILMS = films;
+        FILMS = sortFilms(films, "newest");
       } catch (err) {
         state.loadFailed = true;
         console.warn("Gagal memuat Google Sheet.", err);
