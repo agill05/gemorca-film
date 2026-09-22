@@ -6,8 +6,8 @@
   --text: #f3f4f6;
   --muted: #9ba1ad;
   --soft: #d5d8de;
-  --accent: #d62839;
-  --accent-strong: #f0414f;
+  --accent: #1673d6;
+  --accent-strong: #38a8ff;
 
   --radius: 10px;
   --header-h: 6.5rem;
@@ -135,7 +135,7 @@ button {
 .logo-mark {
   width: 28px;
   height: 28px;
-  color: var(--accent);
+  border-radius: 7px;
   flex: none;
 }
 
