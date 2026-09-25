@@ -29,8 +29,6 @@ let FILMS = [];
   const modal = $("#playerModal");
   const modalClose = $("#modalClose");
   const modalFav = $("#modalFav");
-  const modalTrailer = $("#modalTrailer");
-  const heroTrailer = $("#heroTrailer");
   const modalMeta = $("#modalMeta");
   const modalDesc = $("#modalDesc");
   const playerWrap = $("#playerWrap");
@@ -76,8 +74,7 @@ let FILMS = [];
     seeking: false,
     timer: null,
     graceTimer: null,
-    film: null,
-    mode: "main"
+    film: null
   };
   let lastFocused = null;
   let ytApiPromise = null;
@@ -255,7 +252,6 @@ let FILMS = [];
     const col = (names) => head.findIndex((h) => names.includes(h));
     const idx = {
       video: col(["video", "link", "url", "videourl", "videoembedurl"]),
-      trailer: col(["trailer", "trailerurl", "trailer_url"]),
       judul: col(["judul", "title"]),
       genre: col(["genre"]),
       tahun: col(["tahun", "year"]),
@@ -280,7 +276,6 @@ let FILMS = [];
           tahun: val(row, "tahun"),
           posterUrl: poster || (ytId ? "https://img.youtube.com/vi/" + ytId + "/hqdefault.jpg" : ""),
           videoEmbedUrl: video,
-          trailerUrl: val(row, "trailer"),
           deskripsi: val(row, "deskripsi"),
           unggulan: ["ya", "yes", "true", "1", "x"].includes(val(row, "unggulan").toLowerCase())
         };
@@ -379,11 +374,6 @@ let FILMS = [];
     if (film.tahun) meta.appendChild(makeEl("span", "", String(film.tahun)));
 
     $("#heroPlay").onclick = () => openModal(film);
-
-    if (heroTrailer) {
-      heroTrailer.hidden = !film.trailerUrl;
-      heroTrailer.onclick = () => openModal(film, "trailer");
-    }
   }
 
   function buildHeroDots() {
@@ -831,15 +821,15 @@ let FILMS = [];
     }
   }
 
-  function startFallback(url, title) {
-    const src = buildEmbedUrl(url);
+  function startFallback(film) {
+    const src = buildEmbedUrl(film.videoEmbedUrl);
     if (!src) {
       showPlayerError("Link video tidak valid. Periksa kolom video di Google Sheet.");
       return;
     }
 
     if (isMobileDevice()) {
-      showDriveRedirect(url);
+      showDriveRedirect(film.videoEmbedUrl);
       return;
     }
 
@@ -849,7 +839,7 @@ let FILMS = [];
 
     const iframe = document.createElement("iframe");
     iframe.src = src;
-    iframe.title = "Pemutar video: " + title;
+    iframe.title = "Pemutar video: " + film.judul;
     iframe.allow =
       "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen";
     iframe.allowFullscreen = true;
@@ -937,32 +927,10 @@ let FILMS = [];
     });
   }
 
-  function loadSource(film, url) {
+  function openModal(film) {
+    lastFocused = document.activeElement;
     teardownPlayer();
     player.film = film;
-
-    const videoId = youtubeId(url);
-    if (videoId) {
-      controls.hidden = false;
-      setCoverImage(film);
-      startYouTube(film, videoId, player.session);
-    } else if (url) {
-      startFallback(url, film.judul);
-    } else {
-      showPlayerError("Video tidak tersedia.");
-    }
-  }
-
-  function updateModalTrailerButton() {
-    if (!modalTrailer) return;
-    const film = player.film;
-    modalTrailer.hidden = !(film && film.trailerUrl);
-    modalTrailer.textContent = player.mode === "trailer" ? "Tonton Film" : "Trailer";
-  }
-
-  function openModal(film, mode) {
-    lastFocused = document.activeElement;
-    player.mode = mode === "trailer" && film.trailerUrl ? "trailer" : "main";
 
     $("#modalTitle").textContent = film.judul;
     modalDesc.textContent = film.deskripsi || "";
@@ -983,8 +951,14 @@ let FILMS = [];
       history.pushState({ filmId: film.id }, "", targetHash);
     }
 
-    loadSource(film, player.mode === "trailer" ? film.trailerUrl : film.videoEmbedUrl);
-    updateModalTrailerButton();
+    const videoId = youtubeId(film.videoEmbedUrl);
+    if (videoId) {
+      controls.hidden = false;
+      setCoverImage(film);
+      startYouTube(film, videoId, player.session);
+    } else {
+      startFallback(film);
+    }
     modalClose.focus();
   }
 
@@ -1051,16 +1025,6 @@ let FILMS = [];
   if (modalFav) {
     modalFav.addEventListener("click", () => {
       if (player.film) toggleFavorite(player.film.id);
-    });
-  }
-
-  if (modalTrailer) {
-    modalTrailer.addEventListener("click", () => {
-      const film = player.film;
-      if (!film) return;
-      player.mode = player.mode === "trailer" ? "main" : "trailer";
-      loadSource(film, player.mode === "trailer" ? film.trailerUrl : film.videoEmbedUrl);
-      updateModalTrailerButton();
     });
   }
 

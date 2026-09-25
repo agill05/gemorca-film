@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwmcp95kzGmf5zqsO7O5aZ_miKRyG3oe7-4sVcvbnrg0cHdHN8sZ6LivhuYUowcX9kOQg/exec";
+    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyIA8WrICt7FW3Glv-GPBQvYceL-YawXuT7-sDlzj9vP30cv_nFI6KyVEUUrLAGYpT-lA/exec";
     var REQUEST_TIMEOUT_MS = 30000;
     var MIN_YEAR = 1900;
     var TRUE_VALUES = ["ya", "yes", "true", "1", "x"];
@@ -34,7 +34,6 @@
     var submitBtn = byId("adminSubmit");
     var cancelBtn = byId("adminCancel");
     var videoInput = byId("adminVideo");
-    var trailerInput = byId("adminTrailer");
     var judulInput = byId("adminJudul");
     var genreInput = byId("adminGenre");
     var genreEntry = byId("adminGenreEntry");
@@ -528,7 +527,6 @@
     function readForm() {
         return {
             video: videoInput.value.trim(),
-            trailer: trailerInput.value.trim(),
             judul: judulInput.value.trim(),
             genre: genreInput.value.trim(),
             tahun: tahunInput.value.trim(),
@@ -684,7 +682,6 @@
             formTitle.textContent = "Ubah Film";
             rowInput.value = item.row;
             videoInput.value = item.video || "";
-            trailerInput.value = item.trailer || "";
             judulInput.value = item.judul || "";
             setGenreTags(splitGenreText(item.genre));
             tahunInput.value = item.tahun || "";
@@ -720,12 +717,6 @@
             return {
                 field: videoInput,
                 message: "URL video harus tautan https dari YouTube atau Google Drive. Tautan lain tidak akan tampil di beranda."
-            };
-        }
-        if (values.trailer && !isValidVideo(values.trailer)) {
-            return {
-                field: trailerInput,
-                message: "URL trailer harus tautan https dari YouTube atau Google Drive, atau kosongkan saja."
             };
         }
         if (values.poster && !isHttps(values.poster)) {
