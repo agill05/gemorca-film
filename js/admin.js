@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyUltTxAQxbyADlz_C0yC2M4YQFX95jlShWJvNuFV4k9i-APpfcj4mAu2p1TnIv5zORdA/exec";
+    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbztuRzf8VwANcWukQkq9imZ2dSVcsUJ4Lz2z-5CbL0696Ij4OKitCJtMll-B2fDFZCb_A/exec";
     var REQUEST_TIMEOUT_MS = 30000;
     var MIN_YEAR = 1900;
     var TRUE_VALUES = ["ya", "yes", "true", "1", "x"];
@@ -630,7 +630,9 @@
                 }
             });
         });
-        return list;
+        return list.sort(function (a, b) {
+            return a.localeCompare(b, "id", { sensitivity: "base" });
+        });
     }
 
     function closeGenreSuggestions() {

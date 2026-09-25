@@ -494,7 +494,10 @@ let FILMS = [];
     if (navGenre) navGenre.hidden = !hasGenres;
     chipsBox.textContent = "";
     if (!hasGenres) return;
-    const genres = [ALL_GENRES, ...new Set(FILMS.flatMap((f) => splitGenre(f.genre)))];
+    const uniqueGenres = [...new Set(FILMS.flatMap((f) => splitGenre(f.genre)))].sort((a, b) =>
+      a.localeCompare(b, "id", { sensitivity: "base" })
+    );
+    const genres = [ALL_GENRES, ...uniqueGenres];
     genres.forEach((g) => {
       const chip = makeEl("button", "chip", g);
       chip.type = "button";
