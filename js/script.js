@@ -32,7 +32,6 @@ let FILMS = [];
   const modalShare = $("#modalShare");
   const modalMeta = $("#modalMeta");
   const modalDesc = $("#modalDesc");
-  const modalResume = $("#modalResume");
   const playerWrap = $("#playerWrap");
   const playerHost = $("#playerHost");
   const playerSurface = $("#playerSurface");
@@ -51,10 +50,6 @@ let FILMS = [];
   const FAVORITE_GENRE = "__FAVORITE__";
   const TITLE_CACHE_PREFIX = "gemorcafilm_title_";
   const FAVORITES_KEY = "gemorcafilm_favorites";
-  const WATCH_HISTORY_KEY = "gemorcafilm_history";
-  const HISTORY_MIN_SECONDS = 10;
-  const HISTORY_SAVE_STEP_S = 3;
-  const HISTORY_DONE_RATIO = 0.95;
   const SHEET_CACHE_KEY = "gemorcafilm_sheet_cache";
   const SHEET_CACHE_TTL_MS = 8 * 60 * 1000;
   const REQUEST_TIMEOUT_MS = 6000;
@@ -81,9 +76,7 @@ let FILMS = [];
     seeking: false,
     timer: null,
     graceTimer: null,
-    film: null,
-    pendingResume: null,
-    lastHistorySave: 0
+    film: null
   };
   let lastFocused = null;
   let ytApiPromise = null;
@@ -118,40 +111,6 @@ let FILMS = [];
     } catch (e) {
       return;
     }
-  }
-
-  function readHistory() {
-    try {
-      const obj = JSON.parse(localStorage.getItem(WATCH_HISTORY_KEY) || "{}");
-      return obj && typeof obj === "object" ? obj : {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  function writeHistory(map) {
-    try {
-      localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(map));
-    } catch (e) {
-      return;
-    }
-  }
-
-  function getFilmProgress(id) {
-    const map = readHistory();
-    return map[String(id)] || null;
-  }
-
-  function saveFilmProgress(id, time, duration) {
-    const map = readHistory();
-    map[String(id)] = { time: time, duration: duration, savedAt: Date.now() };
-    writeHistory(map);
-  }
-
-  function clearFilmProgress(id) {
-    const map = readHistory();
-    delete map[String(id)];
-    writeHistory(map);
   }
 
   let favoriteIds = readFavorites();
@@ -710,17 +669,6 @@ let FILMS = [];
     seekBar.value = String(Math.round(ratio * 1000));
     seekBar.style.setProperty("--progress", ratio * 100 + "%");
     timeLabel.textContent = formatTime(current) + " / " + formatTime(duration);
-
-    if (player.film && duration > 0) {
-      if (current > HISTORY_MIN_SECONDS && ratio < HISTORY_DONE_RATIO) {
-        if (current - player.lastHistorySave >= HISTORY_SAVE_STEP_S) {
-          player.lastHistorySave = current;
-          saveFilmProgress(player.film.id, current, duration);
-        }
-      } else if (ratio >= HISTORY_DONE_RATIO) {
-        clearFilmProgress(player.film.id);
-      }
-    }
   }
 
   function syncVolume() {
@@ -833,8 +781,6 @@ let FILMS = [];
     player.ready = false;
     player.seeking = false;
     player.film = null;
-    player.pendingResume = null;
-    player.lastHistorySave = 0;
     playerHost.textContent = "";
     playerWrap.classList.remove("is-playing", "is-paused", "is-muted");
     playerError.hidden = true;
@@ -846,10 +792,6 @@ let FILMS = [];
     seekBar.style.setProperty("--progress", "0%");
     timeLabel.textContent = "0:00 / 0:00";
     btnPlay.setAttribute("aria-label", "Putar");
-    if (modalResume) {
-      modalResume.hidden = true;
-      modalResume.textContent = "";
-    }
   }
 
   function buildDriveLinkBlocker() {
@@ -923,11 +865,6 @@ let FILMS = [];
     updateProgress();
     player.timer = setInterval(updateProgress, PROGRESS_INTERVAL_MS);
     player.yt.playVideo();
-    if (player.pendingResume != null) {
-      const target = player.pendingResume;
-      player.pendingResume = null;
-      player.yt.seekTo(target, true);
-    }
     player.graceTimer = setTimeout(() => {
       if (session !== player.session || !player.ready) return;
       const st = player.yt.getPlayerState();
@@ -1013,33 +950,6 @@ let FILMS = [];
     if (modalFav) {
       modalFav.dataset.favId = film.id;
       setFavButtonState(modalFav, isFavorite(film.id));
-    }
-
-    if (modalResume) {
-      modalResume.textContent = "";
-      const progress = getFilmProgress(film.id);
-      if (progress && progress.time > HISTORY_MIN_SECONDS) {
-        modalResume.hidden = false;
-        const text = makeEl("span", "modal-resume__text", "Lanjutkan dari " + formatTime(progress.time) + "?");
-        const actions = makeEl("span", "modal-resume__actions");
-        const btnResume = makeEl("button", "btn btn-primary modal-resume__btn", "Lanjutkan");
-        btnResume.type = "button";
-        const btnRestart = makeEl("button", "btn btn-ghost modal-resume__btn", "Putar dari Awal");
-        btnRestart.type = "button";
-        btnResume.addEventListener("click", () => {
-          modalResume.hidden = true;
-          if (player.ready) player.yt.seekTo(progress.time, true);
-          else player.pendingResume = progress.time;
-        });
-        btnRestart.addEventListener("click", () => {
-          modalResume.hidden = true;
-          clearFilmProgress(film.id);
-        });
-        actions.append(btnResume, btnRestart);
-        modalResume.append(text, actions);
-      } else {
-        modalResume.hidden = true;
-      }
     }
 
     modal.hidden = false;

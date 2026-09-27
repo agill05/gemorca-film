@@ -2,7 +2,7 @@
     "use strict";
 
     var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyIA8WrICt7FW3Glv-GPBQvYceL-YawXuT7-sDlzj9vP30cv_nFI6KyVEUUrLAGYpT-lA/exec";
-    var REQUEST_TIMEOUT_MS = 30000;
+    var REQUEST_TIMEOUT_MS = 45000;
     var MIN_YEAR = 1900;
     var TRUE_VALUES = ["ya", "yes", "true", "1", "x"];
     var VIEW_TITLES = { login: "adminLoginTitle", list: "adminListTitle", form: "adminFormTitle" };
@@ -480,6 +480,44 @@
         });
     }
 
+    // Auto-verify: request() timing out (AbortError) does not mean the Apps
+    // Script write failed - the server keeps running after the client gives
+    // up waiting. These re-fetch the list to check what actually happened,
+    // so the user is not told "Gagal" when the write already went through
+    // (which would tempt a resubmit and create a duplicate row).
+    function isTimeout(err) {
+        return !!(err && err.name === "AbortError");
+    }
+
+    function verifySavedAfterTimeout(payload) {
+        return request(listUrl(currentPin))
+            .then(function (data) {
+                if (!data.ok) return false;
+                currentItems = data.items || [];
+                return currentItems.some(function (candidate) {
+                    if (payload.action === "update" && Number(candidate.row) !== Number(payload.row)) return false;
+                    return sameItem(candidate, payload);
+                });
+            })
+            .catch(function () {
+                return false;
+            });
+    }
+
+    function verifyDeletedAfterTimeout(row) {
+        return request(listUrl(currentPin))
+            .then(function (data) {
+                if (!data.ok) return false;
+                currentItems = data.items || [];
+                return !currentItems.some(function (candidate) {
+                    return Number(candidate.row) === Number(row);
+                });
+            })
+            .catch(function () {
+                return false;
+            });
+    }
+
     function deleteItem(item) {
         var name = item.judul || "(tanpa judul)";
         var box = el("div");
@@ -503,10 +541,18 @@
                 return verifyRow(item)
                     .then(function (ok) {
                         if (!ok) return { stale: true };
-                        return request(null, { pin: currentPin, action: "delete", row: item.row }).then(function (data) {
-                            if (!data.ok) throw serverFail(data.error || "Film gagal dihapus.");
-                            return { done: true };
-                        });
+                        return request(null, { pin: currentPin, action: "delete", row: item.row })
+                            .then(function (data) {
+                                if (!data.ok) throw serverFail(data.error || "Film gagal dihapus.");
+                                return { done: true };
+                            })
+                            .catch(function (err) {
+                                if (!isTimeout(err)) throw err;
+                                return verifyDeletedAfterTimeout(item.row).then(function (deleted) {
+                                    if (deleted) return { done: true };
+                                    throw err;
+                                });
+                            });
                     })
                     .catch(function (err) {
                         window.Swal.showValidationMessage(errMessage(err));
@@ -771,11 +817,21 @@
 
         setSaving(true);
 
+        var saveRequest = function () {
+            return request(null, payload).catch(function (err) {
+                if (!isTimeout(err)) throw err;
+                return verifySavedAfterTimeout(payload).then(function (saved) {
+                    if (saved) return { ok: true };
+                    throw err;
+                });
+            });
+        };
+
         var job = rowInput.value
             ? verifyRow(editingOriginal).then(function (ok) {
-                  return ok ? request(null, payload) : { stale: true };
+                  return ok ? saveRequest() : { stale: true };
               })
-            : request(null, payload);
+            : saveRequest();
 
         job.then(function (data) {
             if (data.stale) {
