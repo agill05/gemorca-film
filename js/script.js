@@ -29,8 +29,10 @@ let FILMS = [];
   const modal = $("#playerModal");
   const modalClose = $("#modalClose");
   const modalFav = $("#modalFav");
+  const modalShare = $("#modalShare");
   const modalMeta = $("#modalMeta");
   const modalDesc = $("#modalDesc");
+  const modalResume = $("#modalResume");
   const playerWrap = $("#playerWrap");
   const playerHost = $("#playerHost");
   const playerSurface = $("#playerSurface");
@@ -46,8 +48,13 @@ let FILMS = [];
   const btnFullscreen = $("#btnFullscreen");
 
   const ALL_GENRES = "Semua";
+  const FAVORITE_GENRE = "__FAVORITE__";
   const TITLE_CACHE_PREFIX = "gemorcafilm_title_";
   const FAVORITES_KEY = "gemorcafilm_favorites";
+  const WATCH_HISTORY_KEY = "gemorcafilm_history";
+  const HISTORY_MIN_SECONDS = 10;
+  const HISTORY_SAVE_STEP_S = 3;
+  const HISTORY_DONE_RATIO = 0.95;
   const SHEET_CACHE_KEY = "gemorcafilm_sheet_cache";
   const SHEET_CACHE_TTL_MS = 8 * 60 * 1000;
   const REQUEST_TIMEOUT_MS = 6000;
@@ -74,7 +81,9 @@ let FILMS = [];
     seeking: false,
     timer: null,
     graceTimer: null,
-    film: null
+    film: null,
+    pendingResume: null,
+    lastHistorySave: 0
   };
   let lastFocused = null;
   let ytApiPromise = null;
@@ -111,6 +120,40 @@ let FILMS = [];
     }
   }
 
+  function readHistory() {
+    try {
+      const obj = JSON.parse(localStorage.getItem(WATCH_HISTORY_KEY) || "{}");
+      return obj && typeof obj === "object" ? obj : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function writeHistory(map) {
+    try {
+      localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(map));
+    } catch (e) {
+      return;
+    }
+  }
+
+  function getFilmProgress(id) {
+    const map = readHistory();
+    return map[String(id)] || null;
+  }
+
+  function saveFilmProgress(id, time, duration) {
+    const map = readHistory();
+    map[String(id)] = { time: time, duration: duration, savedAt: Date.now() };
+    writeHistory(map);
+  }
+
+  function clearFilmProgress(id) {
+    const map = readHistory();
+    delete map[String(id)];
+    writeHistory(map);
+  }
+
   let favoriteIds = readFavorites();
 
   function isFavorite(id) {
@@ -131,6 +174,7 @@ let FILMS = [];
     writeFavorites(favoriteIds);
     grid.querySelectorAll('.card-fav[data-fav-id="' + key + '"]').forEach((btn) => setFavButtonState(btn, !active));
     if (player.film && String(player.film.id) === key) setFavButtonState(modalFav, !active);
+    if (state.genre === FAVORITE_GENRE) renderGrid();
   }
 
   function readSheetCache() {
@@ -489,17 +533,15 @@ let FILMS = [];
   }
 
   function renderChips() {
-    const hasGenres = FILMS.some((f) => splitGenre(f.genre).length > 0);
-    chipsBox.hidden = !hasGenres;
-    if (navGenre) navGenre.hidden = !hasGenres;
+    chipsBox.hidden = false;
+    if (navGenre) navGenre.hidden = false;
     chipsBox.textContent = "";
-    if (!hasGenres) return;
     const uniqueGenres = [...new Set(FILMS.flatMap((f) => splitGenre(f.genre)))].sort((a, b) =>
       a.localeCompare(b, "id", { sensitivity: "base" })
     );
-    const genres = [ALL_GENRES, ...uniqueGenres];
+    const genres = [FAVORITE_GENRE, ALL_GENRES, ...uniqueGenres];
     genres.forEach((g) => {
-      const chip = makeEl("button", "chip", g);
+      const chip = makeEl("button", "chip", g === FAVORITE_GENRE ? "\u2665 Favorit" : g);
       chip.type = "button";
       chip.dataset.genre = g;
       chip.setAttribute("aria-pressed", String(g === state.genre));
@@ -561,6 +603,10 @@ let FILMS = [];
 
   function getFilteredFilms() {
     const q = state.query.trim().toLowerCase();
+    if (state.genre === FAVORITE_GENRE) {
+      const matches = FILMS.filter((film) => favoriteIds.includes(String(film.id)));
+      return sortFilms(matches, state.sort);
+    }
     const matches = FILMS.filter((film) => {
       const genreOk =
         state.genre === ALL_GENRES || splitGenre(film.genre).includes(state.genre);
@@ -578,7 +624,10 @@ let FILMS = [];
     emptyState.hidden = films.length > 0;
 
     const noData = FILMS.length === 0;
-    if (noData && state.loadFailed) {
+    if (state.genre === FAVORITE_GENRE && films.length === 0 && !noData) {
+      setText(emptyTitle, "Belum ada film favorit");
+      setText(emptyText, "Belum ada film favorit. Klik ikon hati pada film untuk menyimpannya di sini.");
+    } else if (noData && state.loadFailed) {
       setText(emptyTitle, "Daftar film gagal dimuat");
       setText(emptyText, "Periksa koneksi internet, lalu muat ulang halaman.");
     } else if (noData) {
@@ -592,7 +641,8 @@ let FILMS = [];
     sortBox.hidden = FILMS.length < 2;
 
     const q = state.query.trim();
-    if (q) sectionTitle.textContent = "Hasil untuk \u201C" + q + "\u201D";
+    if (state.genre === FAVORITE_GENRE) sectionTitle.textContent = "\u2665 Favorit Saya";
+    else if (q) sectionTitle.textContent = "Hasil untuk \u201C" + q + "\u201D";
     else if (state.genre !== ALL_GENRES) sectionTitle.textContent = state.genre;
     else sectionTitle.textContent = "Semua Film";
 
@@ -660,6 +710,17 @@ let FILMS = [];
     seekBar.value = String(Math.round(ratio * 1000));
     seekBar.style.setProperty("--progress", ratio * 100 + "%");
     timeLabel.textContent = formatTime(current) + " / " + formatTime(duration);
+
+    if (player.film && duration > 0) {
+      if (current > HISTORY_MIN_SECONDS && ratio < HISTORY_DONE_RATIO) {
+        if (current - player.lastHistorySave >= HISTORY_SAVE_STEP_S) {
+          player.lastHistorySave = current;
+          saveFilmProgress(player.film.id, current, duration);
+        }
+      } else if (ratio >= HISTORY_DONE_RATIO) {
+        clearFilmProgress(player.film.id);
+      }
+    }
   }
 
   function syncVolume() {
@@ -772,6 +833,8 @@ let FILMS = [];
     player.ready = false;
     player.seeking = false;
     player.film = null;
+    player.pendingResume = null;
+    player.lastHistorySave = 0;
     playerHost.textContent = "";
     playerWrap.classList.remove("is-playing", "is-paused", "is-muted");
     playerError.hidden = true;
@@ -783,6 +846,10 @@ let FILMS = [];
     seekBar.style.setProperty("--progress", "0%");
     timeLabel.textContent = "0:00 / 0:00";
     btnPlay.setAttribute("aria-label", "Putar");
+    if (modalResume) {
+      modalResume.hidden = true;
+      modalResume.textContent = "";
+    }
   }
 
   function buildDriveLinkBlocker() {
@@ -856,6 +923,11 @@ let FILMS = [];
     updateProgress();
     player.timer = setInterval(updateProgress, PROGRESS_INTERVAL_MS);
     player.yt.playVideo();
+    if (player.pendingResume != null) {
+      const target = player.pendingResume;
+      player.pendingResume = null;
+      player.yt.seekTo(target, true);
+    }
     player.graceTimer = setTimeout(() => {
       if (session !== player.session || !player.ready) return;
       const st = player.yt.getPlayerState();
@@ -943,6 +1015,33 @@ let FILMS = [];
       setFavButtonState(modalFav, isFavorite(film.id));
     }
 
+    if (modalResume) {
+      modalResume.textContent = "";
+      const progress = getFilmProgress(film.id);
+      if (progress && progress.time > HISTORY_MIN_SECONDS) {
+        modalResume.hidden = false;
+        const text = makeEl("span", "modal-resume__text", "Lanjutkan dari " + formatTime(progress.time) + "?");
+        const actions = makeEl("span", "modal-resume__actions");
+        const btnResume = makeEl("button", "btn btn-primary modal-resume__btn", "Lanjutkan");
+        btnResume.type = "button";
+        const btnRestart = makeEl("button", "btn btn-ghost modal-resume__btn", "Putar dari Awal");
+        btnRestart.type = "button";
+        btnResume.addEventListener("click", () => {
+          modalResume.hidden = true;
+          if (player.ready) player.yt.seekTo(progress.time, true);
+          else player.pendingResume = progress.time;
+        });
+        btnRestart.addEventListener("click", () => {
+          modalResume.hidden = true;
+          clearFilmProgress(film.id);
+        });
+        actions.append(btnResume, btnRestart);
+        modalResume.append(text, actions);
+      } else {
+        modalResume.hidden = true;
+      }
+    }
+
     modal.hidden = false;
     document.body.classList.add("no-scroll");
 
@@ -1022,9 +1121,50 @@ let FILMS = [];
     if (film) openModal(film);
   });
 
+  function shareFilm(film) {
+    const url = new URL(window.location.href);
+    url.hash = "film-" + encodeURIComponent(film.id);
+    const shareUrl = url.toString();
+    const shareData = {
+      title: film.judul,
+      text: "Tonton \"" + film.judul + "\" di Gemorca Film",
+      url: shareUrl
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch(() => {});
+      return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(shareUrl)
+        .then(() => {
+          if (window.Swal) {
+            Swal.fire({
+              toast: true,
+              position: "top-end",
+              icon: "success",
+              title: "Tautan berhasil disalin ke clipboard!",
+              showConfirmButton: false,
+              timer: 2200,
+              timerProgressBar: true
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }
+
   if (modalFav) {
     modalFav.addEventListener("click", () => {
       if (player.film) toggleFavorite(player.film.id);
+    });
+  }
+
+  if (modalShare) {
+    modalShare.addEventListener("click", () => {
+      if (player.film) shareFilm(player.film);
     });
   }
 

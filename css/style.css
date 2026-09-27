@@ -532,6 +532,17 @@ button {
   color: #fff;
 }
 
+.chip[data-genre="__FAVORITE__"] {
+  color: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.chip[data-genre="__FAVORITE__"][aria-pressed="true"] {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -853,7 +864,8 @@ button {
 }
 
 .modal-close,
-.modal-fav {
+.modal-fav,
+.modal-share {
   flex: none;
   display: grid;
   place-items: center;
@@ -872,7 +884,8 @@ button {
   border-color: var(--accent);
 }
 
-.modal-fav:hover {
+.modal-fav:hover,
+.modal-share:hover {
   border-color: var(--accent-strong);
 }
 
@@ -886,7 +899,8 @@ button {
 }
 
 .modal-close svg,
-.modal-fav svg {
+.modal-fav svg,
+.modal-share svg {
   width: 20px;
   height: 20px;
 }
@@ -1294,6 +1308,32 @@ button {
   margin: 0;
   max-width: 70ch;
   color: var(--soft);
+}
+
+.modal-resume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.modal-resume__actions {
+  display: flex;
+  flex: none;
+  gap: 0.5rem;
+}
+
+.modal-resume__btn {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -124,6 +124,16 @@
                 d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.3 4.5 5.8 4c2-.3 3.9.6 5 2.2.2.3.5.4.8.4s.6-.1.8-.4c1.1-1.6 3-2.5 5-2.2 3.5.5 5.3 3.8 3.8 7.3-2.5 4.6-10 9.2-10 9.2z" />
             </svg>
           </button>
+          <button type="button" class="modal-share" id="modalShare" aria-label="Bagikan film">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.6" y1="10.5" x2="15.4" y2="6.5" />
+              <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+            </svg>
+          </button>
           <button type="button" class="modal-close" id="modalClose" aria-label="Tutup pemutar video">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
               aria-hidden="true">
@@ -189,6 +199,7 @@
         </div>
       </div>
       <div class="modal-info">
+        <div class="modal-resume" id="modalResume" hidden></div>
         <p class="modal-meta" id="modalMeta"></p>
         <p class="modal-desc" id="modalDesc"></p>
       </div>
