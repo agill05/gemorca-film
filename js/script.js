@@ -260,7 +260,9 @@ let FILMS = [];
       tahun: col(["tahun", "year"]),
       poster: col(["poster", "posterurl"]),
       deskripsi: col(["deskripsi", "sinopsis"]),
-      unggulan: col(["unggulan", "featured"])
+      unggulan: col(["unggulan", "featured"]),
+      status: col(["status"]),
+      rilis: col(["rilis", "release"])
     };
     const val = (row, key) => (idx[key] >= 0 ? (row[idx[key]] || "").trim() : "");
 
@@ -268,7 +270,8 @@ let FILMS = [];
       .slice(1)
       .map((row, i) => {
         const video = val(row, "video");
-        if (!video) return null;
+        const segera = val(row, "status").toLowerCase() === "segera";
+        if (!video && !segera) return null;
 
         const ytId = youtubeId(video);
         const poster = val(row, "poster");
@@ -279,6 +282,8 @@ let FILMS = [];
           tahun: val(row, "tahun"),
           posterUrl: poster || (ytId ? "https://img.youtube.com/vi/" + ytId + "/hqdefault.jpg" : ""),
           videoEmbedUrl: video,
+          segera: segera,
+          rilis: val(row, "rilis"),
           deskripsi: val(row, "deskripsi"),
           unggulan: ["ya", "yes", "true", "1", "x"].includes(val(row, "unggulan").toLowerCase())
         };
@@ -470,7 +475,7 @@ let FILMS = [];
   hero.addEventListener("focusout", startHeroSlideshow);
 
   function renderHero() {
-    const candidates = FILMS.filter((f) => f.posterUrl || f.bannerUrl);
+    const candidates = FILMS.filter((f) => !f.segera && (f.posterUrl || f.bannerUrl));
     hero.hidden = false;
     document.body.classList.remove("no-hero");
 
@@ -518,9 +523,9 @@ let FILMS = [];
     const wrap = makeEl("div", "card-wrap");
     wrap.dataset.id = film.id;
 
-    const card = makeEl("button", "card");
+    const card = makeEl("button", "card" + (film.segera ? " card--soon" : ""));
     card.type = "button";
-    card.setAttribute("aria-label", "Tonton " + film.judul);
+    card.setAttribute("aria-label", (film.segera ? "Segera hadir: " : "Tonton ") + film.judul);
 
     const poster = makeEl("div", "card-poster");
     if (film.posterUrl) {
@@ -538,17 +543,26 @@ let FILMS = [];
       poster.appendChild(makeEl("span", "poster-fallback", film.judul));
     }
 
-    const play = makeEl("div", "card-play");
-    const playBtn = makeEl("span");
-    playBtn.innerHTML = PLAY_ICON;
-    play.appendChild(playBtn);
-    poster.appendChild(play);
+    if (film.segera) {
+      poster.appendChild(makeEl("span", "card-soon", film.rilis ? "Segera Hadir \u2022 " + film.rilis : "Segera Hadir"));
+    } else {
+      const play = makeEl("div", "card-play");
+      const playBtn = makeEl("span");
+      playBtn.innerHTML = PLAY_ICON;
+      play.appendChild(playBtn);
+      poster.appendChild(play);
+    }
 
     const meta = makeEl("div", "card-meta");
     meta.appendChild(makeEl("span", "card-genre", film.genre || ""));
     if (film.tahun) meta.appendChild(makeEl("span", "card-year", String(film.tahun)));
 
     card.append(poster, makeEl("span", "card-title", film.judul), meta);
+
+    if (film.segera) {
+      wrap.append(card);
+      return wrap;
+    }
 
     const fav = makeEl("button", "card-fav");
     fav.type = "button";
@@ -576,7 +590,7 @@ let FILMS = [];
   }
 
   function renderGrid() {
-    const films = getFilteredFilms();
+    const films = getFilteredFilms().sort((a, b) => Number(!!b.segera) - Number(!!a.segera));
 
     grid.replaceChildren(...films.map(createCard));
     grid.hidden = films.length === 0;
@@ -990,7 +1004,7 @@ let FILMS = [];
       return;
     }
     const film = findFilm(decodeURIComponent(match[1]));
-    if (film) openModal(film);
+    if (film && !film.segera) openModal(film);
   }
 
   window.addEventListener("popstate", applyHashRoute);
@@ -1028,7 +1042,7 @@ let FILMS = [];
     const card = e.target.closest(".card");
     if (!card) return;
     const film = findFilm(card.closest(".card-wrap").dataset.id);
-    if (film) openModal(film);
+    if (film && !film.segera) openModal(film);
   });
 
   function shareFilm(film) {

@@ -43,6 +43,9 @@
     var posterInput = byId("adminPoster");
     var deskripsiInput = byId("adminDeskripsi");
     var unggulanInput = byId("adminUnggulan");
+    var statusInput = byId("adminStatus");
+    var rilisInput = byId("adminRilis");
+    var settingsBtn = byId("adminSettings");
     var posterPreview = byId("adminPosterPreview");
     var posterImg = byId("adminPosterImg");
 
@@ -84,6 +87,10 @@
         var api = window.GemorcaVideo;
         if (api && typeof api.buildEmbedUrl === "function") return !!api.buildEmbedUrl(value);
         return isHttps(value);
+    }
+
+    function isSoon(item) {
+        return String(item.status || "").trim().toLowerCase() === "segera";
     }
 
     function isFeatured(item) {
@@ -380,6 +387,7 @@
         var titleBox = el("div", "admin-list__titlebox");
         titleBox.appendChild(el("span", "admin-list__title", name));
         if (isFeatured(item)) titleBox.appendChild(el("span", "admin-badge", "Unggulan"));
+        if (isSoon(item)) titleBox.appendChild(el("span", "admin-badge", "Segera"));
         tdTitle.appendChild(titleBox);
         tr.appendChild(tdTitle);
 
@@ -480,11 +488,6 @@
         });
     }
 
-    // Auto-verify: request() timing out (AbortError) does not mean the Apps
-    // Script write failed - the server keeps running after the client gives
-    // up waiting. These re-fetch the list to check what actually happened,
-    // so the user is not told "Gagal" when the write already went through
-    // (which would tempt a resubmit and create a duplicate row).
     function isTimeout(err) {
         return !!(err && err.name === "AbortError");
     }
@@ -578,7 +581,9 @@
             tahun: tahunInput.value.trim(),
             poster: posterInput.value.trim(),
             deskripsi: deskripsiInput.value.trim(),
-            unggulan: unggulanInput.checked ? "ya" : ""
+            unggulan: unggulanInput.checked ? "ya" : "",
+            status: statusInput.value === "segera" ? "segera" : "",
+            rilis: rilisInput.value.trim()
         };
     }
 
@@ -734,6 +739,8 @@
             posterInput.value = item.poster || "";
             deskripsiInput.value = item.deskripsi || "";
             unggulanInput.checked = isFeatured(item);
+            statusInput.value = isSoon(item) ? "segera" : "";
+            rilisInput.value = item.rilis || "";
             editingOriginal = item;
             updatePosterPreview();
         } else {
@@ -758,8 +765,10 @@
 
     function validateForm() {
         var values = readForm();
-        if (!values.video) return { field: videoInput, message: "Isi URL video terlebih dahulu." };
-        if (!isValidVideo(values.video)) {
+        var soon = values.status === "segera";
+        if (soon && !values.judul) return { field: judulInput, message: "Isi judul untuk film Segera hadir." };
+        if (!values.video && !soon) return { field: videoInput, message: "Isi URL video terlebih dahulu." };
+        if (values.video && !isValidVideo(values.video)) {
             return {
                 field: videoInput,
                 message: "URL video harus tautan https dari YouTube atau Google Drive. Tautan lain tidak akan tampil di beranda."
@@ -857,6 +866,112 @@
                 setSaving(false);
             });
     });
+
+    function settingsField(labelText, control, id) {
+        var wrap = el("div");
+        wrap.style.cssText = "text-align:left;margin-top:.9rem";
+        var label = el("label", "", labelText);
+        label.setAttribute("for", id);
+        label.style.cssText = "display:block;font-size:.85rem;margin-bottom:.3rem";
+        control.id = id;
+        control.style.cssText = "width:100%;margin:0;box-sizing:border-box";
+        wrap.append(label, control);
+        return wrap;
+    }
+
+    function showSettingsDialog(cfg) {
+        var box = el("div");
+
+        var cbWrap = el("label");
+        cbWrap.style.cssText = "display:flex;gap:.6rem;align-items:flex-start;text-align:left;cursor:pointer";
+        var cb = el("input");
+        cb.type = "checkbox";
+        cb.checked = cfg.maintenance === true;
+        cb.style.cssText = "margin-top:.25rem;flex:none";
+        cbWrap.append(cb, el("span", "", "Aktifkan mode pemeliharaan (pengunjung melihat halaman pemeliharaan)"));
+
+        var pesan = el("textarea", "swal2-textarea");
+        pesan.rows = 3;
+        pesan.maxLength = 300;
+        pesan.value = cfg.pesan || "";
+        pesan.placeholder = "Kosongkan untuk pesan standar";
+
+        var estimasi = el("input", "swal2-input");
+        estimasi.type = "text";
+        estimasi.maxLength = 80;
+        estimasi.value = cfg.estimasi || "";
+        estimasi.placeholder = "mis. pukul 21.00 WITA";
+
+        var pengumuman = el("input", "swal2-input");
+        pengumuman.type = "text";
+        pengumuman.maxLength = 200;
+        pengumuman.value = cfg.pengumuman || "";
+        pengumuman.placeholder = "mis. Film baru akan hadir Jumat pukul 20.00";
+
+        box.append(
+            cbWrap,
+            settingsField("Pesan pemeliharaan", pesan, "cfgPesan"),
+            settingsField("Perkiraan selesai", estimasi, "cfgEstimasi"),
+            settingsField("Pengumuman untuk pengunjung (kosongkan untuk menyembunyikan)", pengumuman, "cfgPengumuman")
+        );
+
+        Dialog.fire({
+            title: "Pengaturan situs",
+            html: box,
+            showCancelButton: true,
+            confirmButtonText: "Simpan",
+            cancelButtonText: "Batal",
+            showLoaderOnConfirm: true,
+            allowOutsideClick: function () {
+                return !window.Swal.isLoading();
+            },
+            preConfirm: function () {
+                var payload = {
+                    pin: currentPin,
+                    action: "setconfig",
+                    maintenance: cb.checked,
+                    pesan: pesan.value.trim(),
+                    estimasi: estimasi.value.trim(),
+                    pengumuman: pengumuman.value.trim()
+                };
+                return request(null, payload)
+                    .then(function (data) {
+                        if (!data.ok) throw serverFail(data.error || "Pengaturan gagal disimpan.");
+                        return data.config || payload;
+                    })
+                    .catch(function (err) {
+                        window.Swal.showValidationMessage(errMessage(err));
+                    });
+            }
+        }).then(function (result) {
+            if (!result.isConfirmed || !result.value) return;
+            updateSettingsLabel(result.value);
+            toast("success", "Pengaturan disimpan", "Pengunjung melihat perubahan dalam sekitar 1 menit.");
+        });
+    }
+
+    function updateSettingsLabel(cfg) {
+        settingsBtn.textContent = cfg && cfg.maintenance ? "Pengaturan situs (pemeliharaan AKTIF)" : "Pengaturan situs";
+    }
+
+    function openSettings() {
+        if (settingsBtn.disabled) return;
+        settingsBtn.disabled = true;
+        request("?action=config&pin=" + encodeURIComponent(currentPin))
+            .then(function (data) {
+                if (!data.ok) throw serverFail(data.error || "Gagal memuat pengaturan.");
+                updateSettingsLabel(data.config);
+                showSettingsDialog(data.config || {});
+            })
+            .catch(function (err) {
+                toast("error", "Gagal memuat pengaturan", errMessage(err));
+            })
+            .finally(function () {
+                settingsBtn.disabled = false;
+            });
+    }
+
+    settingsBtn.addEventListener("click", openSettings);
 
     var clickCount = 0;
     var clickTimer = null;

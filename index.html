@@ -21,7 +21,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="stylesheet" href="css/style.css?v=9">
 </head>
 
 <body>
@@ -205,7 +205,8 @@
     </div>
   </div>
 
-  <script src="js/script.js?v=9"></script>
+  <script src="js/script.js?v=10"></script>
+  <script src="js/status.js?v=1"></script>
 
   <div class="admin-modal" id="adminModal" hidden>
     <div class="admin-modal__backdrop" data-admin-close></div>
@@ -264,6 +265,7 @@
             <input type="search" id="adminSearch" placeholder="Cari judul atau genre" aria-label="Cari film di daftar"
               autocomplete="off">
           </div>
+          <button type="button" class="btn btn-ghost admin-settings-btn" id="adminSettings">Pengaturan situs</button>
         </div>
         <div class="admin-view__body admin-view__body--list" id="adminList"></div>
         <div class="admin-view__foot">
@@ -280,8 +282,19 @@
           <div class="admin-grid">
             <div class="admin-field admin-field--full">
               <label for="adminVideo">URL Video</label>
-              <input type="url" id="adminVideo" inputmode="url" required>
-              <span class="admin-hint">Tautan https dari YouTube atau Google Drive.</span>
+              <input type="url" id="adminVideo" inputmode="url">
+              <span class="admin-hint">Tautan https dari YouTube atau Google Drive. Boleh kosong jika status "Segera hadir".</span>
+            </div>
+            <div class="admin-field">
+              <label for="adminStatus">Status</label>
+              <select id="adminStatus">
+                <option value="">Tayang</option>
+                <option value="segera">Segera hadir</option>
+              </select>
+            </div>
+            <div class="admin-field">
+              <label for="adminRilis">Tanggal rilis (untuk Segera hadir)</label>
+              <input type="text" id="adminRilis" placeholder="mis. 12 Oktober 2026" maxlength="40">
             </div>
             <div class="admin-field">
               <label for="adminJudul">Judul</label>
@@ -329,7 +342,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <script src="js/admin.js?v=4"></script>
+  <script src="js/admin.js?v=5"></script>
 </body>
 
 </html>
