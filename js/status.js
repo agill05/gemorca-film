@@ -285,7 +285,7 @@
         apply(data, false);
       })
       .catch(function () {
-        
+
       })
       .then(function () {
         inflight = false;
