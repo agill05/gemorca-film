@@ -200,7 +200,6 @@
                     try {
                         return JSON.parse(text);
                     } catch (e) {
-                        // Biasanya halaman error HTML dari Google. Cuplikan ini membantu mencari penyebabnya.
                         if (window.console && console.warn) {
                             console.warn("Balasan server bukan JSON. HTTP " + res.status + ": " + String(text).slice(0, 300).replace(/\s+/g, " "));
                         }
@@ -222,8 +221,6 @@
             );
     }
 
-    // Ulangi otomatis (maks 3 kali) kalau balasan bukan JSON atau jaringan putus sesaat.
-    // Hanya untuk aksi yang aman diulang: login, list, config, setconfig. Tidak untuk create, update, delete.
     var RETRY_MAX = 3;
     var RETRY_DELAY_MS = 900;
 
@@ -242,7 +239,6 @@
         return run();
     }
 
-    // PIN selalu lewat POST (tidak masuk URL, riwayat browser, atau log).
     function listRequest(pin) {
         return requestRetry(null, { action: "list", pin: pin });
     }
@@ -530,11 +526,6 @@
         });
     }
 
-    // Auto-verify: request() timing out (AbortError) does not mean the Apps
-    // Script write failed - the server keeps running after the client gives
-    // up waiting. These re-fetch the list to check what actually happened,
-    // so the user is not told "Gagal" when the write already went through
-    // (which would tempt a resubmit and create a duplicate row).
     function isTimeout(err) {
         return !!(err && (err.name === "AbortError" || err.badFormat));
     }
@@ -776,6 +767,8 @@
         closeGenreSuggestions();
         editingOriginal = null;
 
+        rilisInput.placeholder = "mis. 2026-10-01 19:00 (WITA)";
+
         if (item) {
             formTitle.textContent = "Ubah Film";
             rowInput.value = item.row;
@@ -947,18 +940,18 @@
         estimasi.type = "text";
         estimasi.maxLength = 80;
         estimasi.value = cfg.estimasi || "";
-        estimasi.placeholder = "mis. pukul 21.00 WITA";
+        estimasi.placeholder = "YYYY-MM-DD HH:mm (mis. 2026-09-30 22:00 WITA)";
 
         var pengumuman = el("input", "swal2-input");
         pengumuman.type = "text";
         pengumuman.maxLength = 200;
         pengumuman.value = cfg.pengumuman || "";
-        pengumuman.placeholder = "mis. Film baru akan hadir Jumat pukul 20.00";
+        pengumuman.placeholder = "mis. Film baru akan hadir Jumat pukul 20.00 WITA";
 
         box.append(
             cbWrap,
             settingsField("Pesan pemeliharaan", pesan, "cfgPesan"),
-            settingsField("Perkiraan selesai", estimasi, "cfgEstimasi"),
+            settingsField("Perkiraan selesai (gunakan format YYYY-MM-DD HH:mm untuk hitung mundur WITA otomatis)", estimasi, "cfgEstimasi"),
             settingsField("Pengumuman untuk pengunjung (kosongkan untuk menyembunyikan)", pengumuman, "cfgPengumuman")
         );
 

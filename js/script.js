@@ -80,6 +80,7 @@ let FILMS = [];
   };
   let lastFocused = null;
   let ytApiPromise = null;
+  let soonTimer = null;
 
   function setText(el, text) {
     if (el) el.textContent = text;
@@ -94,6 +95,33 @@ let FILMS = [];
 
   function findFilm(id) {
     return FILMS.find((f) => String(f.id) === String(id));
+  }
+
+  function parseTargetDate(str) {
+    if (!str) return null;
+    let s = String(str).trim();
+    if (!s) return null;
+
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/.test(s)) {
+      s = s.replace(" ", "T") + "+08:00";
+    }
+    const t = Date.parse(s);
+    return isNaN(t) ? null : t;
+  }
+
+  function formatTimeRemaining(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+
+    const pad = (n) => (n < 10 ? "0" : "") + n;
+
+    if (days > 0) {
+      return days + " hr " + pad(hours) + ":" + pad(mins) + ":" + pad(secs);
+    }
+    return pad(hours) + ":" + pad(mins) + ":" + pad(secs);
   }
 
   function readFavorites() {
@@ -265,12 +293,20 @@ let FILMS = [];
       rilis: col(["rilis", "release"])
     };
     const val = (row, key) => (idx[key] >= 0 ? (row[idx[key]] || "").trim() : "");
+    const now = Date.now();
 
     return rows
       .slice(1)
       .map((row, i) => {
         const video = val(row, "video");
-        const segera = val(row, "status").toLowerCase() === "segera";
+        const rilisRaw = val(row, "rilis");
+        const rilisMs = parseTargetDate(rilisRaw);
+        let segera = val(row, "status").toLowerCase() === "segera";
+
+        if (segera && rilisMs && now >= rilisMs) {
+          segera = false;
+        }
+
         if (!video && !segera) return null;
 
         const ytId = youtubeId(video);
@@ -283,7 +319,8 @@ let FILMS = [];
           posterUrl: poster || (ytId ? "https://img.youtube.com/vi/" + ytId + "/hqdefault.jpg" : ""),
           videoEmbedUrl: video,
           segera: segera,
-          rilis: val(row, "rilis"),
+          rilis: rilisRaw,
+          rilisMs: rilisMs,
           deskripsi: val(row, "deskripsi"),
           unggulan: ["ya", "yes", "true", "1", "x"].includes(val(row, "unggulan").toLowerCase())
         };
@@ -544,7 +581,19 @@ let FILMS = [];
     }
 
     if (film.segera) {
-      poster.appendChild(makeEl("span", "card-soon", film.rilis ? "Segera Hadir \u2022 " + film.rilis : "Segera Hadir"));
+      const soonEl = makeEl("span", "card-soon");
+      soonEl.dataset.soonId = film.id;
+      if (film.rilisMs) {
+        const diff = film.rilisMs - Date.now();
+        if (diff > 0) {
+          soonEl.textContent = "Tayang " + formatTimeRemaining(diff);
+        } else {
+          soonEl.textContent = "Segera Hadir";
+        }
+      } else {
+        soonEl.textContent = film.rilis ? "Segera Hadir \u2022 " + film.rilis : "Segera Hadir";
+      }
+      poster.appendChild(soonEl);
     } else {
       const play = makeEl("div", "card-play");
       const playBtn = makeEl("span");
@@ -572,6 +621,42 @@ let FILMS = [];
 
     wrap.append(card, fav);
     return wrap;
+  }
+
+  function updateSoonCountdowns() {
+    let needsReRender = false;
+    const now = Date.now();
+
+    FILMS.forEach((film) => {
+      if (film.segera && film.rilisMs) {
+        if (now >= film.rilisMs) {
+          film.segera = false;
+          needsReRender = true;
+        }
+      }
+    });
+
+    if (needsReRender) {
+      renderHero();
+      renderGrid();
+      return;
+    }
+
+    const soonElements = grid.querySelectorAll(".card-soon[data-soon-id]");
+    soonElements.forEach((el) => {
+      const film = findFilm(el.dataset.soonId);
+      if (film && film.segera && film.rilisMs) {
+        const diff = film.rilisMs - now;
+        if (diff > 0) {
+          el.textContent = "Tayang " + formatTimeRemaining(diff);
+        }
+      }
+    });
+  }
+
+  function startSoonCountdown() {
+    if (soonTimer) clearInterval(soonTimer);
+    soonTimer = setInterval(updateSoonCountdowns, 1000);
   }
 
   function getFilteredFilms() {
@@ -1332,6 +1417,7 @@ let FILMS = [];
     renderHero();
     renderChips();
     renderGrid();
+    startSoonCountdown();
     applyHashRoute();
   }
 

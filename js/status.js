@@ -59,7 +59,6 @@
     var s = String(str).trim();
     if (!s) return null;
 
-    // Jika format YYYY-MM-DDTHH:mm atau YYYY-MM-DD HH:mm tanpa zona waktu, asumsikan WITA (+08:00)
     if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/.test(s)) {
       s = s.replace(" ", "T") + "+08:00";
     }
