@@ -18,6 +18,7 @@
   var banner = null;
   var toastEl = null;
   var toastTimer = null;
+  var maintTimer = null;
   var inertNodes = [];
 
   function store(kind) {
@@ -53,6 +54,36 @@
     return node;
   }
 
+  function parseTargetDate(str) {
+    if (!str) return null;
+    var s = String(str).trim();
+    if (!s) return null;
+
+    // Jika format YYYY-MM-DDTHH:mm atau YYYY-MM-DD HH:mm tanpa zona waktu, asumsikan WITA (+08:00)
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/.test(s)) {
+      s = s.replace(" ", "T") + "+08:00";
+    }
+    var t = Date.parse(s);
+    return isNaN(t) ? null : t;
+  }
+
+  function formatTimeRemaining(ms) {
+    var totalSec = Math.floor(ms / 1000);
+    var days = Math.floor(totalSec / 86400);
+    var hours = Math.floor((totalSec % 86400) / 3600);
+    var mins = Math.floor((totalSec % 3600) / 60);
+    var secs = totalSec % 60;
+
+    var pad = function (n) {
+      return (n < 10 ? "0" : "") + n;
+    };
+
+    if (days > 0) {
+      return days + " hari " + pad(hours) + ":" + pad(mins) + ":" + pad(secs);
+    }
+    return pad(hours) + ":" + pad(mins) + ":" + pad(secs);
+  }
+
   function injectStyles() {
     var css = [
       ".gm-maint{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;",
@@ -61,7 +92,7 @@
       ".gm-maint__icon{width:4rem;height:4rem;margin:0 auto 1.25rem;color:var(--accent-strong,#38a8ff)}",
       ".gm-maint h2{margin:0 0 .75rem;font-family:var(--font-display,system-ui,sans-serif);font-size:1.75rem;color:var(--text,#f3f4f6)}",
       ".gm-maint p{margin:0 0 .75rem;line-height:1.6;color:var(--soft,#d5d8de)}",
-      ".gm-maint__eta{color:var(--muted,#9ba1ad)}",
+      ".gm-maint__eta{color:var(--muted,#9ba1ad);font-weight:600;font-variant-numeric:tabular-nums}",
       ".gm-maint .btn{margin-top:.5rem}",
       "body.is-maintenance{overflow:hidden}",
       "body.is-maintenance .nav,body.is-maintenance .search{display:none}",
@@ -137,8 +168,34 @@
     }
     overlay.querySelector(".gm-maint__msg").textContent = data.pesan || DEFAULT_MESSAGE;
     var eta = overlay.querySelector(".gm-maint__eta");
-    eta.textContent = data.estimasi ? "Perkiraan selesai: " + data.estimasi : "";
-    eta.hidden = !data.estimasi;
+
+    if (maintTimer) {
+      clearInterval(maintTimer);
+      maintTimer = null;
+    }
+
+    var targetMs = parseTargetDate(data.estimasi);
+
+    if (targetMs) {
+      var updateCountdown = function () {
+        var now = Date.now();
+        var diff = targetMs - now;
+        if (diff <= 0) {
+          clearInterval(maintTimer);
+          maintTimer = null;
+          hideMaintenance();
+          poll(true);
+        } else {
+          eta.textContent = "Perkiraan selesai: " + formatTimeRemaining(diff) + " (WITA)";
+          eta.hidden = false;
+        }
+      };
+      updateCountdown();
+      maintTimer = setInterval(updateCountdown, 1000);
+    } else {
+      eta.textContent = data.estimasi ? "Perkiraan selesai: " + data.estimasi : "";
+      eta.hidden = !data.estimasi;
+    }
 
     document.body.classList.add("is-maintenance");
     setInert(true);
@@ -148,6 +205,10 @@
   }
 
   function hideMaintenance() {
+    if (maintTimer) {
+      clearInterval(maintTimer);
+      maintTimer = null;
+    }
     if (!overlay) return;
     overlay.remove();
     overlay = null;
