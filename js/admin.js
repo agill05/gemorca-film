@@ -350,6 +350,8 @@
         modal.hidden = false;
         document.body.classList.add("no-scroll");
 
+        pingServer();
+
         try {
             var savedPin = sessionStorage.getItem(SESSION_PIN_KEY);
             if (savedPin) {
@@ -372,7 +374,6 @@
         loginSubmit.disabled = !Dialog;
         showView("login");
         if (!Dialog) showLoginMsg("Pustaka notifikasi gagal dimuat. Muat ulang halaman, lalu coba lagi.");
-        pingServer();
     }
 
     function closeAdmin() {
@@ -855,8 +856,12 @@
 
     function finishSave() {
         formSnapshot = serializeForm();
+        try {
+            sessionStorage.removeItem("gemorcafilm_sheet_cache");
+        } catch (e) { }
+
         showView("list");
-        toast("success", "Film disimpan", "Beranda diperbarui dalam beberapa menit.");
+        toast("success", "Film disimpan", "Beranda berhasil diperbarui.");
         loadList();
     }
 

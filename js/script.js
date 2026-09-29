@@ -1,5 +1,5 @@
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS5dCln-zDV_zKmTvNwaNrttTBQaRjGPs5W6KjovG2_HZYjgYKciJrOcJv5jXBl6bfkOl_SSbi3cvs5/pub?gid=0&single=true&output=csv";
-
+const SPREADSHEET_ID = "11VogAqU5M_KMquCA3gpnIyHAt--_icOGRaWmKm-dUK4";
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`;
 let FILMS = [];
 
 (function () {
@@ -831,7 +831,7 @@ let FILMS = [];
   function exitFullscreen() {
     if (!fullscreenElement() || !exitFullscreenFn) return;
     const result = exitFullscreenFn.call(document);
-    if (result && typeof result.catch === "function") result.catch(() => {});
+    if (result && typeof result.catch === "function") result.catch(() => { });
   }
 
   function toggleFullscreen() {
@@ -841,7 +841,7 @@ let FILMS = [];
       return;
     }
     const result = requestFullscreenFn.call(playerWrap);
-    if (result && typeof result.catch === "function") result.catch(() => {});
+    if (result && typeof result.catch === "function") result.catch(() => { });
   }
 
   function loadYouTubeApi() {
@@ -1141,7 +1141,7 @@ let FILMS = [];
     };
 
     if (navigator.share) {
-      navigator.share(shareData).catch(() => {});
+      navigator.share(shareData).catch(() => { });
       return;
     }
 
@@ -1161,7 +1161,7 @@ let FILMS = [];
             });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }
 
@@ -1425,7 +1425,7 @@ let FILMS = [];
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+      navigator.serviceWorker.register("service-worker.js").catch(() => { });
     });
   }
 })();
