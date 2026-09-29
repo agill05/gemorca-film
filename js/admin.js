@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyIA8WrICt7FW3Glv-GPBQvYceL-YawXuT7-sDlzj9vP30cv_nFI6KyVEUUrLAGYpT-lA/exec";
+    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwP7ElTDIvhOxf4mhPycll22n2XbjoiUrxvh0GLjx1HJVC8ERKylaXe_osbmu-tqfL1bw/exec";
     var REQUEST_TIMEOUT_MS = 45000;
     var MIN_YEAR = 1900;
     var TRUE_VALUES = ["ya", "yes", "true", "1", "x"];
