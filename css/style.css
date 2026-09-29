@@ -1585,6 +1585,10 @@ button {
   color: var(--accent-strong);
 }
 
+.admin-modal__msg.is-info {
+  color: var(--muted);
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: 1fr;

@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzNGk3li_dy7G3k0YkfHADAzzfIJ9QtKbNs1OJJ5v-iNxALFwcDx0FpkX-NYZH5wUSo2g/exec";
+    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwP7ElTDIvhOxf4mhPycll22n2XbjoiUrxvh0GLjx1HJVC8ERKylaXe_osbmu-tqfL1bw/exec";
     var REQUEST_TIMEOUT_MS = 45000;
     var MIN_YEAR = 1900;
     var TRUE_VALUES = ["ya", "yes", "true", "1", "x"];
@@ -212,8 +212,12 @@
             );
     }
 
-    function listUrl(pin) {
-        return "?action=list&pin=" + encodeURIComponent(pin);
+    function listRequest(pin) {
+        return request(null, { action: "list", pin: pin });
+    }
+
+    function pingServer() {
+        request("?action=ping").catch(function () {});
     }
 
     function setLoading(btn, isLoading, loadingText) {
@@ -291,6 +295,12 @@
         pinInput.setAttribute("aria-invalid", "true");
     }
 
+    function showLoginInfo(message) {
+        loginMsg.hidden = false;
+        loginMsg.textContent = message;
+        loginMsg.className = "admin-modal__msg is-info";
+    }
+
     function hideLoginMsg() {
         loginMsg.hidden = true;
         loginMsg.textContent = "";
@@ -318,6 +328,7 @@
         loginSubmit.disabled = !Dialog;
         showView("login");
         if (!Dialog) showLoginMsg("Pustaka notifikasi gagal dimuat. Muat ulang halaman, lalu coba lagi.");
+        pingServer();
     }
 
     function closeAdmin() {
@@ -465,7 +476,7 @@
 
     function loadList() {
         renderLoading();
-        return request(listUrl(currentPin))
+        return listRequest(currentPin)
             .then(function (data) {
                 if (!data.ok) throw serverFail(data.error || "Gagal memuat daftar film.");
                 currentItems = data.items || [];
@@ -477,7 +488,7 @@
     }
 
     function verifyRow(item) {
-        return request(listUrl(currentPin)).then(function (data) {
+        return listRequest(currentPin).then(function (data) {
             if (!data.ok) throw serverFail(data.error || "Gagal memeriksa data terbaru.");
             currentItems = data.items || [];
             var fresh = null;
@@ -493,7 +504,7 @@
     }
 
     function verifySavedAfterTimeout(payload) {
-        return request(listUrl(currentPin))
+        return listRequest(currentPin)
             .then(function (data) {
                 if (!data.ok) return false;
                 currentItems = data.items || [];
@@ -508,7 +519,7 @@
     }
 
     function verifyDeletedAfterTimeout(row) {
-        return request(listUrl(currentPin))
+        return listRequest(currentPin)
             .then(function (data) {
                 if (!data.ok) return false;
                 currentItems = data.items || [];
@@ -957,7 +968,7 @@
     function openSettings() {
         if (settingsBtn.disabled) return;
         settingsBtn.disabled = true;
-        request("?action=config&pin=" + encodeURIComponent(currentPin))
+        request(null, { action: "config", pin: currentPin })
             .then(function (data) {
                 if (!data.ok) throw serverFail(data.error || "Gagal memuat pengaturan.");
                 updateSettingsLabel(data.config);
@@ -1026,15 +1037,19 @@
         }
 
         setLoginBusy(true);
-        request(listUrl(pin))
+        var slowTimer = setTimeout(function () {
+            if (!modal.hidden && currentView === "login") showLoginInfo("Server sedang bangun, mohon tunggu sebentar...");
+        }, 3500);
+        request(null, { action: "login", pin: pin })
             .then(function (data) {
                 if (modal.hidden) return;
                 if (data.ok) {
+                    hideLoginMsg();
                     currentPin = pin;
-                    currentItems = data.items || [];
+                    currentItems = [];
                     searchInput.value = "";
-                    renderList();
                     showView("list");
+                    loadList();
                 } else {
                     showLoginMsg(data.error || "PIN salah. Periksa lalu coba lagi.");
                 }
@@ -1043,6 +1058,7 @@
                 if (!modal.hidden) showLoginMsg(errMessage(err));
             })
             .finally(function () {
+                clearTimeout(slowTimer);
                 setLoginBusy(false);
                 if (!modal.hidden && currentView === "login") {
                     pinInput.focus();

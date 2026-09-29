@@ -2,7 +2,7 @@
   "use strict";
 
   var WEBAPP_URL =
-    "https://script.google.com/macros/s/AKfycbzNGk3li_dy7G3k0YkfHADAzzfIJ9QtKbNs1OJJ5v-iNxALFwcDx0FpkX-NYZH5wUSo2g/exec";
+    "https://script.google.com/macros/s/AKfycbwP7ElTDIvhOxf4mhPycll22n2XbjoiUrxvh0GLjx1HJVC8ERKylaXe_osbmu-tqfL1bw/exec";
   var STATUS_URL = WEBAPP_URL + "?action=status";
   var POLL_MS = 60 * 1000;
   var TIMEOUT_MS = 8000;
@@ -197,7 +197,7 @@
     try {
       sessionStorage.removeItem(SHEET_CACHE_KEY);
     } catch (e) {
-
+      
     }
     window.location.reload();
   }
@@ -285,7 +285,7 @@
         apply(data, false);
       })
       .catch(function () {
-
+        
       })
       .then(function () {
         inflight = false;
