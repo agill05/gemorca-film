@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwP7ElTDIvhOxf4mhPycll22n2XbjoiUrxvh0GLjx1HJVC8ERKylaXe_osbmu-tqfL1bw/exec";
+    var WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyIA8WrICt7FW3Glv-GPBQvYceL-YawXuT7-sDlzj9vP30cv_nFI6KyVEUUrLAGYpT-lA/exec";
     var REQUEST_TIMEOUT_MS = 45000;
     var MIN_YEAR = 1900;
     var TRUE_VALUES = ["ya", "yes", "true", "1", "x"];
@@ -196,8 +196,18 @@
 
         return fetch(url, options)
             .then(function (res) {
-                return res.json().catch(function () {
-                    throw serverFail("Server balas format tak terduga. Coba lagi.");
+                return res.text().then(function (text) {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        // Biasanya halaman error HTML dari Google. Cuplikan ini membantu mencari penyebabnya.
+                        if (window.console && console.warn) {
+                            console.warn("Balasan server bukan JSON. HTTP " + res.status + ": " + String(text).slice(0, 300).replace(/\s+/g, " "));
+                        }
+                        var err = serverFail("Server balas format tak terduga. Coba lagi.");
+                        err.badFormat = true;
+                        throw err;
+                    }
                 });
             })
             .then(
@@ -212,8 +222,29 @@
             );
     }
 
+    // Ulangi otomatis (maks 3 kali) kalau balasan bukan JSON atau jaringan putus sesaat.
+    // Hanya untuk aksi yang aman diulang: login, list, config, setconfig. Tidak untuk create, update, delete.
+    var RETRY_MAX = 3;
+    var RETRY_DELAY_MS = 900;
+
+    function requestRetry(query, payload) {
+        var attempt = 0;
+        function run() {
+            attempt++;
+            return request(query, payload).catch(function (err) {
+                var transient = err && (err.badFormat || err.name === "TypeError");
+                if (!transient || attempt >= RETRY_MAX) throw err;
+                return new Promise(function (resolve) {
+                    setTimeout(resolve, RETRY_DELAY_MS * attempt);
+                }).then(run);
+            });
+        }
+        return run();
+    }
+
+    // PIN selalu lewat POST (tidak masuk URL, riwayat browser, atau log).
     function listRequest(pin) {
-        return request(null, { action: "list", pin: pin });
+        return requestRetry(null, { action: "list", pin: pin });
     }
 
     function pingServer() {
@@ -499,8 +530,13 @@
         });
     }
 
+    // Auto-verify: request() timing out (AbortError) does not mean the Apps
+    // Script write failed - the server keeps running after the client gives
+    // up waiting. These re-fetch the list to check what actually happened,
+    // so the user is not told "Gagal" when the write already went through
+    // (which would tempt a resubmit and create a duplicate row).
     function isTimeout(err) {
-        return !!(err && err.name === "AbortError");
+        return !!(err && (err.name === "AbortError" || err.badFormat));
     }
 
     function verifySavedAfterTimeout(payload) {
@@ -945,7 +981,7 @@
                     estimasi: estimasi.value.trim(),
                     pengumuman: pengumuman.value.trim()
                 };
-                return request(null, payload)
+                return requestRetry(null, payload)
                     .then(function (data) {
                         if (!data.ok) throw serverFail(data.error || "Pengaturan gagal disimpan.");
                         return data.config || payload;
@@ -968,7 +1004,7 @@
     function openSettings() {
         if (settingsBtn.disabled) return;
         settingsBtn.disabled = true;
-        request(null, { action: "config", pin: currentPin })
+        requestRetry(null, { action: "config", pin: currentPin })
             .then(function (data) {
                 if (!data.ok) throw serverFail(data.error || "Gagal memuat pengaturan.");
                 updateSettingsLabel(data.config);
@@ -1040,7 +1076,7 @@
         var slowTimer = setTimeout(function () {
             if (!modal.hidden && currentView === "login") showLoginInfo("Server sedang bangun, mohon tunggu sebentar...");
         }, 3500);
-        request(null, { action: "login", pin: pin })
+        requestRetry(null, { action: "login", pin: pin })
             .then(function (data) {
                 if (modal.hidden) return;
                 if (data.ok) {
