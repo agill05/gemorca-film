@@ -109,6 +109,15 @@
         return id ? "https://img.youtube.com/vi/" + id + "/hqdefault.jpg" : "";
     }
 
+    function formatForPicker(val) {
+        if (!val) return "";
+        var s = String(val).trim();
+        if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(s)) {
+            return s.replace(" ", "T").slice(0, 16);
+        }
+        return "";
+    }
+
     function buildSwal() {
         if (!window.Swal) return;
         var base = {
@@ -767,8 +776,6 @@
         closeGenreSuggestions();
         editingOriginal = null;
 
-        rilisInput.placeholder = "mis. 2026-10-01 19:00 (WITA)";
-
         if (item) {
             formTitle.textContent = "Ubah Film";
             rowInput.value = item.row;
@@ -780,7 +787,7 @@
             deskripsiInput.value = item.deskripsi || "";
             unggulanInput.checked = isFeatured(item);
             statusInput.value = isSoon(item) ? "segera" : "";
-            rilisInput.value = item.rilis || "";
+            rilisInput.value = formatForPicker(item.rilis);
             editingOriginal = item;
             updatePosterPreview();
         } else {
@@ -937,10 +944,8 @@
         pesan.placeholder = "Kosongkan untuk pesan standar";
 
         var estimasi = el("input", "swal2-input");
-        estimasi.type = "text";
-        estimasi.maxLength = 80;
-        estimasi.value = cfg.estimasi || "";
-        estimasi.placeholder = "YYYY-MM-DD HH:mm (mis. 2026-09-30 22:00 WITA)";
+        estimasi.type = "datetime-local";
+        estimasi.value = formatForPicker(cfg.estimasi);
 
         var pengumuman = el("input", "swal2-input");
         pengumuman.type = "text";
@@ -951,7 +956,7 @@
         box.append(
             cbWrap,
             settingsField("Pesan pemeliharaan", pesan, "cfgPesan"),
-            settingsField("Perkiraan selesai (gunakan format YYYY-MM-DD HH:mm untuk hitung mundur WITA otomatis)", estimasi, "cfgEstimasi"),
+            settingsField("Perkiraan selesai (pilih tanggal & jam WITA)", estimasi, "cfgEstimasi"),
             settingsField("Pengumuman untuk pengunjung (kosongkan untuk menyembunyikan)", pengumuman, "cfgPengumuman")
         );
 
