@@ -6,6 +6,7 @@
     var MIN_YEAR = 1900;
     var TRUE_VALUES = ["ya", "yes", "true", "1", "x"];
     var VIEW_TITLES = { login: "adminLoginTitle", list: "adminListTitle", form: "adminFormTitle" };
+    var SESSION_PIN_KEY = "gemorcafilm_admin_pin";
 
     function byId(id) {
         return document.getElementById(id);
@@ -189,8 +190,8 @@
         var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
         var timer = controller
             ? setTimeout(function () {
-                  controller.abort();
-              }, REQUEST_TIMEOUT_MS)
+                controller.abort();
+            }, REQUEST_TIMEOUT_MS)
             : null;
         var options = controller ? { signal: controller.signal } : {};
         var url = WEBAPP_URL;
@@ -253,7 +254,7 @@
     }
 
     function pingServer() {
-        request("?action=ping").catch(function () {});
+        request("?action=ping").catch(function () { });
     }
 
     function setLoading(btn, isLoading, loadingText) {
@@ -331,12 +332,6 @@
         pinInput.setAttribute("aria-invalid", "true");
     }
 
-    function showLoginInfo(message) {
-        loginMsg.hidden = false;
-        loginMsg.textContent = message;
-        loginMsg.className = "admin-modal__msg is-info";
-    }
-
     function hideLoginMsg() {
         loginMsg.hidden = true;
         loginMsg.textContent = "";
@@ -354,6 +349,19 @@
         lastFocus = document.activeElement;
         modal.hidden = false;
         document.body.classList.add("no-scroll");
+
+        try {
+            var savedPin = sessionStorage.getItem(SESSION_PIN_KEY);
+            if (savedPin) {
+                currentPin = savedPin;
+                currentItems = [];
+                searchInput.value = "";
+                showView("list");
+                loadList();
+                return;
+            }
+        } catch (e) { }
+
         currentPin = "";
         currentItems = [];
         editingOriginal = null;
@@ -370,8 +378,6 @@
     function closeAdmin() {
         modal.hidden = true;
         document.body.classList.remove("no-scroll");
-        currentPin = "";
-        pinInput.value = "";
         if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
         lastFocus = null;
     }
@@ -885,8 +891,8 @@
 
         var job = rowInput.value
             ? verifyRow(editingOriginal).then(function (ok) {
-                  return ok ? saveRequest() : { stale: true };
-              })
+                return ok ? saveRequest() : { stale: true };
+            })
             : saveRequest();
 
         job.then(function (data) {
@@ -1062,7 +1068,7 @@
         e.preventDefault();
         if (!Dialog) return;
 
-        var pin = pinInput.value;
+        var pin = pinInput.value.trim();
         hideLoginMsg();
         if (!pin) {
             showLoginMsg("Isi PIN terlebih dahulu.");
@@ -1071,15 +1077,22 @@
         }
 
         setLoginBusy(true);
-        var slowTimer = setTimeout(function () {
-            if (!modal.hidden && currentView === "login") showLoginInfo("Server sedang bangun, mohon tunggu sebentar...");
-        }, 3500);
-        requestRetry(null, { action: "login", pin: pin })
+
+        fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pin: pin })
+        })
+            .then(function (res) {
+                return res.json();
+            })
             .then(function (data) {
-                if (modal.hidden) return;
                 if (data.ok) {
                     hideLoginMsg();
                     currentPin = pin;
+                    try {
+                        sessionStorage.setItem(SESSION_PIN_KEY, pin);
+                    } catch (e) { }
                     currentItems = [];
                     searchInput.value = "";
                     showView("list");
@@ -1088,11 +1101,10 @@
                     showLoginMsg(data.error || "PIN salah. Periksa lalu coba lagi.");
                 }
             })
-            .catch(function (err) {
-                if (!modal.hidden) showLoginMsg(errMessage(err));
+            .catch(function () {
+                showLoginMsg("Gagal terhubung ke server Vercel. Periksa koneksi.");
             })
             .finally(function () {
-                clearTimeout(slowTimer);
                 setLoginBusy(false);
                 if (!modal.hidden && currentView === "login") {
                     pinInput.focus();
