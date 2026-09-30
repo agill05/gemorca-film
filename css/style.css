@@ -2128,3 +2128,142 @@ button {
 .admin-settings-btn {
   flex: none;
 }
+
+/* Header & Logout Button */
+.admin-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem 0;
+}
+
+.admin-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--accent-strong);
+  border-color: rgba(214, 40, 57, 0.3);
+}
+
+.admin-logout-btn:hover {
+  background: rgba(214, 40, 57, 0.15);
+}
+
+/* Tabs Navigasi Admin */
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-tab {
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.admin-tab:hover {
+  color: var(--text);
+}
+
+.admin-tab.is-active {
+  color: var(--accent-strong);
+  border-bottom-color: var(--accent-strong);
+}
+
+/* Quick Filter Chips */
+.admin-quick-filters {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 1.5rem 0.75rem;
+}
+
+.admin-chip {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-chip:hover {
+  border-color: #3b4150;
+  color: var(--text);
+}
+
+.admin-chip.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Paginasi */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.admin-page-btn {
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.admin-page-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.admin-page-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.admin-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Quick Action Buttons di Tabel */
+.admin-quick-btn {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.admin-quick-btn:hover {
+  border-color: var(--accent-strong);
+}
+
+.admin-quick-btn.is-active {
+  background: rgba(56, 168, 255, 0.18);
+  color: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
