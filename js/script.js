@@ -637,6 +637,14 @@ let FILMS = [];
     });
 
     if (needsReRender) {
+      const playable = FILMS.filter((film) => film.segera || film.videoEmbedUrl);
+      if (playable.length !== FILMS.length) {
+        FILMS.length = 0;
+        playable.forEach((film) => FILMS.push(film));
+      }
+    }
+
+    if (needsReRender) {
       renderHero();
       renderGrid();
       return;

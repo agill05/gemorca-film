@@ -66,6 +66,12 @@
     return isNaN(t) ? null : t;
   }
 
+  function isMaintenanceActive(data) {
+    if (!data || !data.maintenance) return false;
+    var targetMs = parseTargetDate(data.estimasi);
+    return !(targetMs && targetMs <= Date.now());
+  }
+
   function formatTimeRemaining(ms) {
     var totalSec = Math.floor(ms / 1000);
     var days = Math.floor(totalSec / 86400);
@@ -180,8 +186,6 @@
         var now = Date.now();
         var diff = targetMs - now;
         if (diff <= 0) {
-          clearInterval(maintTimer);
-          maintTimer = null;
           hideMaintenance();
           poll(true);
         } else {
@@ -190,6 +194,7 @@
         }
       };
       updateCountdown();
+      if (!overlay) return;
       maintTimer = setInterval(updateCountdown, 1000);
     } else {
       eta.textContent = data.estimasi ? "Perkiraan selesai: " + data.estimasi : "";
@@ -208,9 +213,10 @@
       clearInterval(maintTimer);
       maintTimer = null;
     }
-    if (!overlay) return;
-    overlay.remove();
-    overlay = null;
+    if (overlay) {
+      overlay.remove();
+      overlay = null;
+    }
     document.body.classList.remove("is-maintenance");
     setInert(false);
   }
@@ -296,7 +302,7 @@
   }
 
   function apply(data, fromCache) {
-    if (data.maintenance) {
+    if (isMaintenanceActive(data)) {
       showMaintenance(data);
       return;
     }

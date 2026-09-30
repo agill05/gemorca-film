@@ -110,6 +110,20 @@
         return id ? "https://img.youtube.com/vi/" + id + "/hqdefault.jpg" : "";
     }
 
+    function isPastEstimate(val) {
+        var s = String(val || "").trim();
+        if (!s) return false;
+        if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/.test(s)) {
+            s = s.replace(" ", "T") + "+08:00";
+        }
+        var t = Date.parse(s);
+        return !isNaN(t) && t <= Date.now();
+    }
+
+    function isMaintenanceOn(cfg) {
+        return !!cfg && cfg.maintenance === true && !isPastEstimate(cfg.estimasi);
+    }
+
     function formatForPicker(val) {
         if (!val) return "";
         var s = String(val).trim();
@@ -944,7 +958,7 @@
         cbWrap.style.cssText = "display:flex;gap:.6rem;align-items:flex-start;text-align:left;cursor:pointer";
         var cb = el("input");
         cb.type = "checkbox";
-        cb.checked = cfg.maintenance === true;
+        cb.checked = isMaintenanceOn(cfg);
         cb.style.cssText = "margin-top:.25rem;flex:none";
         cbWrap.append(cb, el("span", "", "Aktifkan mode pemeliharaan (pengunjung melihat halaman pemeliharaan)"));
 
@@ -982,6 +996,12 @@
                 return !window.Swal.isLoading();
             },
             preConfirm: function () {
+                if (cb.checked && isPastEstimate(estimasi.value)) {
+                    window.Swal.showValidationMessage(
+                        "Perkiraan selesai sudah lewat. Ubah ke waktu yang akan datang atau kosongkan."
+                    );
+                    return false;
+                }
                 var payload = {
                     pin: currentPin,
                     action: "setconfig",
@@ -1007,7 +1027,7 @@
     }
 
     function updateSettingsLabel(cfg) {
-        settingsBtn.textContent = cfg && cfg.maintenance ? "Pengaturan situs (pemeliharaan AKTIF)" : "Pengaturan situs";
+        settingsBtn.textContent = isMaintenanceOn(cfg) ? "Pengaturan situs (pemeliharaan AKTIF)" : "Pengaturan situs";
     }
 
     function openSettings() {
