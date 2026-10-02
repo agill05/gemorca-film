@@ -2267,3 +2267,85 @@ button {
   color: var(--accent-strong);
   border-color: var(--accent-strong);
 }
+
+/* Developer */
+.developer {
+  padding: 0 0 4rem;
+}
+
+.developer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+}
+
+.developer-photo {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--line);
+  background: var(--surface-2);
+}
+
+.developer-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.developer-role {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.developer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.developer-links .btn {
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.developer-links .btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.developer-links .btn:hover {
+  border-color: var(--accent-strong);
+}
+
+@media (min-width: 768px) {
+  .developer-card {
+    flex-direction: row;
+    gap: 1.5rem;
+    padding: 1.5rem 2rem;
+    text-align: left;
+  }
+
+  .developer-info {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .developer-links {
+    justify-content: flex-end;
+  }
+}

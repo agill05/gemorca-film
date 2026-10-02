@@ -1,8 +1,8 @@
-const CACHE_NAME = "gemorca-film-v11";
+const CACHE_NAME = "gemorca-film-v12";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
-  "./css/style.css?v=10",
+  "./css/style.css?v=11",
   "./js/script.js?v=11",
   "./js/status.js?v=2",
   "./manifest.json",
