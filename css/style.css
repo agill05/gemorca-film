@@ -2129,7 +2129,6 @@ button {
   flex: none;
 }
 
-/* Header & Logout Button */
 .admin-panel-header {
   display: flex;
   justify-content: space-between;
@@ -2151,7 +2150,6 @@ button {
   background: rgba(214, 40, 57, 0.15);
 }
 
-/* Tabs Navigasi Admin */
 .admin-tabs {
   display: flex;
   gap: 0.5rem;
@@ -2180,7 +2178,6 @@ button {
   border-bottom-color: var(--accent-strong);
 }
 
-/* Quick Filter Chips */
 .admin-quick-filters {
   display: flex;
   gap: 0.4rem;
@@ -2210,7 +2207,6 @@ button {
   color: #fff;
 }
 
-/* Paginasi */
 .admin-pagination {
   display: flex;
   align-items: center;
@@ -2247,7 +2243,6 @@ button {
   cursor: not-allowed;
 }
 
-/* Quick Action Buttons di Tabel */
 .admin-quick-btn {
   padding: 0.2rem 0.5rem;
   border: 1px solid var(--line);
@@ -2268,7 +2263,6 @@ button {
   border-color: var(--accent-strong);
 }
 
-/* Footer developer */
 .footer-inner {
   display: flex;
   flex-direction: column;
