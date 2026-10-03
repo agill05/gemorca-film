@@ -2,7 +2,7 @@
   "use strict";
 
   var WEBAPP_URL =
-    "https://script.google.com/macros/s/AKfycbx9iJtomvZzKM8qJn8EzaOVJ2j-KMATO3xiXRfvR-IT__3v8UEO6dOLT9xwlNWOVSda-Q/exec";
+    "https://script.google.com/macros/s/AKfycbw5gF7AfwxPnzZpjYRimZJTV3o3Ekrs7f0LjYZ5fakDQm7VU6VteTMhFvlN30PfZqGgEA/exec";
   var STATUS_URL = WEBAPP_URL + "?action=status";
   var POLL_MS = 60 * 1000;
   var TIMEOUT_MS = 8000;
