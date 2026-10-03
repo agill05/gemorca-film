@@ -21,7 +21,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="stylesheet" href="css/style.css?v=13">
 </head>
 
 <body>
@@ -229,6 +229,7 @@
           </button>
         </div>
       </div>
+      <div class="modal-parts" id="modalParts" aria-label="Pilih bagian" hidden></div>
       <div class="modal-info">
         <p class="modal-meta" id="modalMeta"></p>
         <p class="modal-desc" id="modalDesc"></p>
@@ -236,7 +237,7 @@
     </div>
   </div>
 
-  <script src="js/script.js?v=11"></script>
+  <script src="js/script.js?v=12"></script>
   <script src="js/status.js?v=2"></script>
 
   <div class="admin-modal" id="adminModal" hidden>
@@ -394,6 +395,12 @@
             <input type="number" id="adminTahun" inputmode="numeric" min="1900" step="1">
           </div>
           <div class="admin-field">
+            <label for="adminKoleksi">Koleksi / Waralaba</label>
+            <input type="text" id="adminKoleksi" list="adminKoleksiList" maxlength="80" autocomplete="off">
+            <datalist id="adminKoleksiList"></datalist>
+            <span class="admin-hint">Opsional. Film dengan nama koleksi sama digabung jadi satu kartu (contoh: Now You See Me).</span>
+          </div>
+          <div class="admin-field">
             <label for="adminPoster">URL Poster</label>
             <input type="url" id="adminPoster" inputmode="url">
           </div>
@@ -420,7 +427,7 @@
 </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <script src="js/admin.js?v=8"></script>
+  <script src="js/admin.js?v=9"></script>
 </body>
 
 </html>

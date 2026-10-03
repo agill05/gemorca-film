@@ -53,6 +53,8 @@
     var genreTagsBox = byId("adminGenreTags");
     var genreSuggest = byId("adminGenreSuggest");
     var tahunInput = byId("adminTahun");
+    var koleksiInput = byId("adminKoleksi");
+    var koleksiList = byId("adminKoleksiList");
     var posterInput = byId("adminPoster");
     var deskripsiInput = byId("adminDeskripsi");
     var unggulanInput = byId("adminUnggulan");
@@ -855,6 +857,7 @@
             judul: judulInput.value.trim(),
             genre: genreInput.value.trim(),
             tahun: tahunInput.value.trim(),
+            koleksi: koleksiInput.value.trim(),
             poster: posterInput.value.trim(),
             deskripsi: deskripsiInput.value.trim(),
             unggulan: unggulanInput.checked ? "ya" : "",
@@ -997,8 +1000,23 @@
         genreSuggest.hidden = false;
     }
 
+    function refreshKoleksiOptions() {
+        if (!koleksiList) return;
+        var seen = {};
+        koleksiList.textContent = "";
+        currentItems.forEach(function (it) {
+            var name = String(it.koleksi || "").trim();
+            if (!name || seen[name.toLowerCase()]) return;
+            seen[name.toLowerCase()] = true;
+            var opt = document.createElement("option");
+            opt.value = name;
+            koleksiList.appendChild(opt);
+        });
+    }
+
     function openForm(item) {
         form.reset();
+        refreshKoleksiOptions();
         posterPreview.hidden = true;
         posterImg.removeAttribute("src");
         genreEntry.value = "";
@@ -1012,6 +1030,7 @@
             judulInput.value = item.judul || "";
             setGenreTags(splitGenreText(item.genre));
             tahunInput.value = item.tahun || "";
+            koleksiInput.value = item.koleksi || "";
             posterInput.value = item.poster || "";
             deskripsiInput.value = item.deskripsi || "";
             unggulanInput.checked = isFeatured(item);

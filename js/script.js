@@ -32,6 +32,7 @@ let FILMS = [];
   const modalShare = $("#modalShare");
   const modalMeta = $("#modalMeta");
   const modalDesc = $("#modalDesc");
+  const modalParts = $("#modalParts");
   const playerWrap = $("#playerWrap");
   const playerHost = $("#playerHost");
   const playerSurface = $("#playerSurface");
@@ -143,8 +144,60 @@ let FILMS = [];
 
   let favoriteIds = readFavorites();
 
-  function isFavorite(id) {
-    return favoriteIds.includes(String(id));
+  const COLL_PREFIX = "koleksi-";
+
+  function collectionKey(film) {
+    return String((film && film.koleksi) || "").trim().toLowerCase();
+  }
+
+  function collectionId(key) {
+    return COLL_PREFIX + (key.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x");
+  }
+
+  // Film yang bisa diputar dan punya koleksi sama digabung. Koleksi sah kalau punya 2 bagian atau lebih.
+  // Film "Segera" tetap kartu sendiri sampai rilis.
+  function buildCollections() {
+    const map = new Map();
+    FILMS.forEach((film) => {
+      const key = collectionKey(film);
+      if (!key || film.segera) return;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(film);
+    });
+    map.forEach((parts, key) => {
+      if (parts.length < 2) map.delete(key);
+      else map.set(key, sortFilms(parts, "oldest"));
+    });
+    return map;
+  }
+
+  function partsOf(film) {
+    return buildCollections().get(collectionKey(film)) || null;
+  }
+
+  function favKey(film) {
+    const key = collectionKey(film);
+    return !film.segera && key && buildCollections().has(key) ? collectionId(key) : String(film.id);
+  }
+
+  function partsByCollectionId(id) {
+    let found = [];
+    buildCollections().forEach((parts, key) => {
+      if (collectionId(key) === id) found = parts;
+    });
+    return found;
+  }
+
+  function favIdsFor(key) {
+    const ids = [String(key)];
+    if (String(key).indexOf(COLL_PREFIX) === 0) {
+      partsByCollectionId(String(key)).forEach((p) => ids.push(String(p.id)));
+    }
+    return ids;
+  }
+
+  function isFavorite(key) {
+    return favIdsFor(key).some((id) => favoriteIds.includes(id));
   }
 
   function setFavButtonState(btn, active) {
@@ -154,13 +207,14 @@ let FILMS = [];
     btn.setAttribute("aria-label", active ? "Hapus dari favorit" : "Tambah ke favorit");
   }
 
-  function toggleFavorite(id) {
-    const key = String(id);
-    const active = favoriteIds.includes(key);
-    favoriteIds = active ? favoriteIds.filter((f) => f !== key) : favoriteIds.concat(key);
+  function toggleFavorite(rawKey) {
+    const key = String(rawKey);
+    const ids = favIdsFor(key);
+    const active = ids.some((id) => favoriteIds.includes(id));
+    favoriteIds = active ? favoriteIds.filter((f) => ids.indexOf(f) === -1) : favoriteIds.concat(key);
     writeFavorites(favoriteIds);
     grid.querySelectorAll('.card-fav[data-fav-id="' + key + '"]').forEach((btn) => setFavButtonState(btn, !active));
-    if (player.film && String(player.film.id) === key) setFavButtonState(modalFav, !active);
+    if (player.film && favKey(player.film) === key) setFavButtonState(modalFav, !active);
     if (state.genre === FAVORITE_GENRE) renderGrid();
   }
 
@@ -290,7 +344,8 @@ let FILMS = [];
       deskripsi: col(["deskripsi", "sinopsis"]),
       unggulan: col(["unggulan", "featured"]),
       status: col(["status"]),
-      rilis: col(["rilis", "release"])
+      rilis: col(["rilis", "release"]),
+      koleksi: col(["koleksi", "franchise"])
     };
     const val = (row, key) => (idx[key] >= 0 ? (row[idx[key]] || "").trim() : "");
     const now = Date.now();
@@ -322,6 +377,7 @@ let FILMS = [];
           rilis: rilisRaw,
           rilisMs: rilisMs,
           deskripsi: val(row, "deskripsi"),
+          koleksi: val(row, "koleksi"),
           unggulan: ["ya", "yes", "true", "1", "x"].includes(val(row, "unggulan").toLowerCase())
         };
         if (!poster && ytId) film.bannerUrl = "https://img.youtube.com/vi/" + ytId + "/maxresdefault.jpg";
@@ -560,9 +616,15 @@ let FILMS = [];
     const wrap = makeEl("div", "card-wrap");
     wrap.dataset.id = film.id;
 
+    const isColl = Array.isArray(film.parts);
     const card = makeEl("button", "card" + (film.segera ? " card--soon" : ""));
     card.type = "button";
-    card.setAttribute("aria-label", (film.segera ? "Segera hadir: " : "Tonton ") + film.judul);
+    card.setAttribute(
+      "aria-label",
+      isColl
+        ? "Buka koleksi " + film.judul + ", " + film.parts.length + " bagian"
+        : (film.segera ? "Segera hadir: " : "Tonton ") + film.judul
+    );
 
     const poster = makeEl("div", "card-poster");
     if (film.posterUrl) {
@@ -601,6 +663,7 @@ let FILMS = [];
       play.appendChild(playBtn);
       poster.appendChild(play);
     }
+    if (isColl) poster.appendChild(makeEl("span", "card-badge", film.parts.length + " Bagian"));
 
     const meta = makeEl("div", "card-meta");
     meta.appendChild(makeEl("span", "card-genre", film.genre || ""));
@@ -615,9 +678,10 @@ let FILMS = [];
 
     const fav = makeEl("button", "card-fav");
     fav.type = "button";
-    fav.dataset.favId = film.id;
+    const favId = isColl ? film.id : favKey(film);
+    fav.dataset.favId = favId;
     fav.innerHTML = HEART_ICON;
-    setFavButtonState(fav, isFavorite(film.id));
+    setFavButtonState(fav, isFavorite(favId));
 
     wrap.append(card, fav);
     return wrap;
@@ -670,22 +734,56 @@ let FILMS = [];
   function getFilteredFilms() {
     const q = state.query.trim().toLowerCase();
     if (state.genre === FAVORITE_GENRE) {
-      const matches = FILMS.filter((film) => favoriteIds.includes(String(film.id)));
+      const matches = FILMS.filter((film) => isFavorite(favKey(film)));
       return sortFilms(matches, state.sort);
     }
     const matches = FILMS.filter((film) => {
       const genreOk =
         state.genre === ALL_GENRES || splitGenre(film.genre).includes(state.genre);
-      const text = (film.judul + " " + film.genre + " " + (film.tahun || "")).toLowerCase();
+      const text = (film.judul + " " + film.genre + " " + (film.tahun || "") + " " + (film.koleksi || "")).toLowerCase();
       return genreOk && (!q || text.includes(q));
     });
     return sortFilms(matches, state.sort);
   }
 
-  function renderGrid() {
-    const films = getFilteredFilms().sort((a, b) => Number(!!b.segera) - Number(!!a.segera));
+  // Gabung film hasil filter jadi kartu. Satu kartu per koleksi, di posisi bagian pertama yang lolos filter.
+  function groupCards(films) {
+    const collections = buildCollections();
+    const seen = new Set();
+    const cards = [];
+    films.forEach((film) => {
+      const key = collectionKey(film);
+      const parts = !film.segera && key ? collections.get(key) : null;
+      if (!parts) {
+        cards.push(film);
+        return;
+      }
+      if (seen.has(key)) return;
+      seen.add(key);
+      const years = parts.map(yearOf).filter(Number.isFinite);
+      const lo = years.length ? Math.min(...years) : "";
+      const hi = years.length ? Math.max(...years) : "";
+      cards.push({
+        id: collectionId(key),
+        judul: film.koleksi,
+        genre: [...new Set(parts.flatMap((p) => splitGenre(p.genre)))].join(", "),
+        tahun: lo === hi ? String(lo) : lo + "\u2013" + hi,
+        posterUrl: parts[0].posterUrl || parts[0].bannerUrl || "",
+        segera: false,
+        parts: parts
+      });
+    });
+    return cards;
+  }
 
-    grid.replaceChildren(...films.map(createCard));
+  let renderedCards = new Map();
+
+  function renderGrid() {
+    const cards = groupCards(getFilteredFilms()).sort((a, b) => Number(!!b.segera) - Number(!!a.segera));
+    const films = cards;
+    renderedCards = new Map(cards.map((c) => [String(c.id), c]));
+
+    grid.replaceChildren(...cards.map(createCard));
     grid.hidden = films.length === 0;
     emptyState.hidden = films.length > 0;
 
@@ -712,7 +810,7 @@ let FILMS = [];
     else if (state.genre !== ALL_GENRES) sectionTitle.textContent = state.genre;
     else sectionTitle.textContent = "Semua Film";
 
-    resultCount.textContent = films.length + " film";
+    resultCount.textContent = cards.reduce((n, c) => n + (c.parts ? c.parts.length : 1), 0) + " film";
   }
 
   function resetFilter() {
@@ -1043,8 +1141,38 @@ let FILMS = [];
     });
   }
 
-  function openModal(film) {
-    lastFocused = document.activeElement;
+  function renderParts(film) {
+    if (!modalParts) return;
+    const parts = film.segera ? null : partsOf(film);
+    modalParts.textContent = "";
+    modalParts.hidden = !parts;
+    if (!parts) return;
+    parts.forEach((part, i) => {
+      const active = part === film || String(part.id) === String(film.id);
+      const btn = makeEl("button", "part-tab", "Part " + (i + 1));
+      btn.type = "button";
+      btn.dataset.partId = part.id;
+      btn.title = part.judul;
+      btn.setAttribute("aria-pressed", String(active));
+      if (active) btn.setAttribute("aria-current", "true");
+      modalParts.appendChild(btn);
+    });
+  }
+
+  if (modalParts) {
+    modalParts.addEventListener("click", (e) => {
+      const btn = e.target.closest(".part-tab");
+      if (!btn) return;
+      const film = findFilm(btn.dataset.partId);
+      if (film && (!player.film || String(player.film.id) !== String(film.id))) {
+        openModal(film, { switching: true });
+      }
+    });
+  }
+
+  function openModal(film, opts) {
+    const switching = !!(opts && opts.switching);
+    if (!switching) lastFocused = document.activeElement;
     teardownPlayer();
     player.film = film;
 
@@ -1055,16 +1183,19 @@ let FILMS = [];
     modalMeta.textContent = metaText;
     modalMeta.hidden = !metaText;
     if (modalFav) {
-      modalFav.dataset.favId = film.id;
-      setFavButtonState(modalFav, isFavorite(film.id));
+      const key = favKey(film);
+      modalFav.dataset.favId = key;
+      setFavButtonState(modalFav, isFavorite(key));
     }
+    renderParts(film);
 
     modal.hidden = false;
     document.body.classList.add("no-scroll");
 
     const targetHash = "#film-" + encodeURIComponent(film.id);
     if (window.location.hash !== targetHash) {
-      history.pushState({ filmId: film.id }, "", targetHash);
+      if (switching) history.replaceState({ filmId: film.id }, "", targetHash);
+      else history.pushState({ filmId: film.id }, "", targetHash);
     }
 
     const videoId = youtubeId(film.videoEmbedUrl);
@@ -1075,7 +1206,12 @@ let FILMS = [];
     } else {
       startFallback(film);
     }
-    modalClose.focus();
+    if (switching && modalParts) {
+      const activeTab = modalParts.querySelector('.part-tab[aria-current="true"]');
+      (activeTab || modalClose).focus();
+    } else {
+      modalClose.focus();
+    }
   }
 
   function closeModal() {
@@ -1134,8 +1270,9 @@ let FILMS = [];
     }
     const card = e.target.closest(".card");
     if (!card) return;
-    const film = findFilm(card.closest(".card-wrap").dataset.id);
-    if (film && !film.segera) openModal(film);
+    const item = renderedCards.get(String(card.closest(".card-wrap").dataset.id));
+    if (!item || item.segera) return;
+    openModal(item.parts ? item.parts[0] : item);
   });
 
   function shareFilm(film) {
@@ -1175,7 +1312,7 @@ let FILMS = [];
 
   if (modalFav) {
     modalFav.addEventListener("click", () => {
-      if (player.film) toggleFavorite(player.film.id);
+      if (player.film) toggleFavorite(favKey(player.film));
     });
   }
 
