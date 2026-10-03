@@ -1141,6 +1141,47 @@ let FILMS = [];
     });
   }
 
+  function buildPartTab(part, index, active) {
+    const btn = makeEl("button", "part-tab");
+    btn.type = "button";
+    btn.dataset.partId = part.id;
+    btn.setAttribute("aria-pressed", String(active));
+    btn.setAttribute(
+      "aria-label",
+      "Part " + (index + 1) + ": " + part.judul + (part.tahun ? " (" + part.tahun + ")" : "") + (active ? ", sedang diputar" : "")
+    );
+    if (active) btn.setAttribute("aria-current", "true");
+
+    const thumb = makeEl("span", "part-poster");
+    const src = part.posterUrl || part.bannerUrl;
+    if (src) {
+      const img = new Image();
+      img.alt = "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.src = src;
+      img.addEventListener("error", () => {
+        img.remove();
+        thumb.prepend(makeEl("span", "poster-fallback", part.judul));
+      });
+      thumb.appendChild(img);
+    } else {
+      thumb.appendChild(makeEl("span", "poster-fallback", part.judul));
+    }
+    if (active) thumb.appendChild(makeEl("span", "part-now", "Sedang diputar"));
+
+    const label = makeEl("span", "part-label", "Part " + (index + 1) + (part.tahun ? " \u2022 " + part.tahun : ""));
+    btn.append(thumb, label, makeEl("span", "part-title", part.judul));
+    return btn;
+  }
+
+  function centerActivePart() {
+    if (!modalParts || modalParts.hidden) return;
+    const active = modalParts.querySelector('.part-tab[aria-current="true"]');
+    if (!active) return;
+    modalParts.scrollLeft = Math.max(0, active.offsetLeft - (modalParts.clientWidth - active.offsetWidth) / 2);
+  }
+
   function renderParts(film) {
     if (!modalParts) return;
     const parts = film.segera ? null : partsOf(film);
@@ -1149,13 +1190,7 @@ let FILMS = [];
     if (!parts) return;
     parts.forEach((part, i) => {
       const active = part === film || String(part.id) === String(film.id);
-      const btn = makeEl("button", "part-tab", "Part " + (i + 1));
-      btn.type = "button";
-      btn.dataset.partId = part.id;
-      btn.title = part.judul;
-      btn.setAttribute("aria-pressed", String(active));
-      if (active) btn.setAttribute("aria-current", "true");
-      modalParts.appendChild(btn);
+      modalParts.appendChild(buildPartTab(part, i, active));
     });
   }
 
@@ -1206,9 +1241,11 @@ let FILMS = [];
     } else {
       startFallback(film);
     }
+    centerActivePart();
     if (switching && modalParts) {
       const activeTab = modalParts.querySelector('.part-tab[aria-current="true"]');
-      (activeTab || modalClose).focus();
+      if (activeTab) activeTab.focus({ preventScroll: true });
+      else modalClose.focus();
     } else {
       modalClose.focus();
     }
