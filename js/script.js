@@ -48,7 +48,6 @@ let FILMS = [];
 
   const ALL_GENRES = "Semua";
   const FAVORITE_GENRE = "__FAVORITE__";
-  const TITLE_CACHE_PREFIX = "gemorcafilm_title_";
   const FAVORITES_KEY = "gemorcafilm_favorites";
   const SHEET_CACHE_KEY = "gemorcafilm_sheet_cache";
   const SHEET_CACHE_TTL_MS = 0;
@@ -57,6 +56,7 @@ let FILMS = [];
   const VOLUME_STEP = 10;
   const AUTOPLAY_GRACE_MS = 1800;
   const PROGRESS_INTERVAL_MS = 250;
+  const UI_IDLE_MS = 2500;
   const HERO_SLIDE_INTERVAL_MS = 6000;
   const HERO_MAX_SLIDES = 6;
   const YT_ENDED = 0;
@@ -76,6 +76,8 @@ let FILMS = [];
     seeking: false,
     timer: null,
     graceTimer: null,
+    uiTimer: null,
+    uiHover: false,
     film: null
   };
   let lastFocused = null;
@@ -330,64 +332,10 @@ let FILMS = [];
       .filter(Boolean);
   }
 
-  function readCachedTitle(id) {
-    try {
-      return localStorage.getItem(TITLE_CACHE_PREFIX + id) || "";
-    } catch (e) {
-      return "";
-    }
-  }
-
-  function writeCachedTitle(id, title) {
-    try {
-      localStorage.setItem(TITLE_CACHE_PREFIX + id, title);
-    } catch (e) {
-      return;
-    }
-  }
-
-  async function fetchJson(url) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    try {
-      const res = await fetch(url, { signal: controller.signal });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return await res.json();
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  async function fetchYoutubeTitle(id) {
-    const watchUrl = "https://www.youtube.com/watch?v=" + id;
-    const endpoints = [
-      "https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent(watchUrl),
-      "https://noembed.com/embed?url=" + encodeURIComponent(watchUrl)
-    ];
-    for (const endpoint of endpoints) {
-      try {
-        const data = await fetchJson(endpoint);
-        if (data && data.title) return String(data.title).trim();
-      } catch (e) {
-        continue;
-      }
-    }
-    return "";
-  }
-
-  async function fillTitles(films) {
-    await Promise.all(
-      films.map(async (film) => {
-        if (film.judul) return;
-        const id = youtubeId(film.videoEmbedUrl);
-        let title = id ? readCachedTitle(id) : "";
-        if (id && !title) {
-          title = await fetchYoutubeTitle(id);
-          if (title) writeCachedTitle(id, title);
-        }
-        film.judul = title || "Film " + film.id;
-      })
-    );
+  function fillTitles(films) {
+    films.forEach((film) => {
+      if (!film.judul) film.judul = "Film " + film.id;
+    });
   }
 
   async function loadFromSheet() {
@@ -761,11 +709,31 @@ let FILMS = [];
     playerCover.hidden = true;
     controls.hidden = true;
     playerSurface.hidden = true;
+    playerWrap.classList.add("ui-on");
+  }
+
+  function isYtPlaying() {
+    return !!player.yt && player.ready && playerWrap.classList.contains("is-playing");
+  }
+
+  function showUi() {
+    playerWrap.classList.add("ui-on");
+    clearTimeout(player.uiTimer);
+    if (!isYtPlaying() || player.uiHover) return;
+    player.uiTimer = setTimeout(hideUi, UI_IDLE_MS);
+  }
+
+  function hideUi() {
+    clearTimeout(player.uiTimer);
+    if (!isYtPlaying() || player.uiHover) return;
+    if (playerWrap.contains(document.activeElement) && document.activeElement.matches(":focus-visible")) return;
+    playerWrap.classList.remove("ui-on");
   }
 
   function setPlaying(isPlaying) {
     playerWrap.classList.toggle("is-playing", isPlaying);
     btnPlay.setAttribute("aria-label", isPlaying ? "Jeda" : "Putar");
+    showUi();
   }
 
   function updateProgress() {
@@ -877,6 +845,8 @@ let FILMS = [];
     player.session += 1;
     clearInterval(player.timer);
     clearTimeout(player.graceTimer);
+    clearTimeout(player.uiTimer);
+    player.uiHover = false;
     if (player.yt && typeof player.yt.destroy === "function") {
       try {
         player.yt.destroy();
@@ -889,7 +859,7 @@ let FILMS = [];
     player.seeking = false;
     player.film = null;
     playerHost.textContent = "";
-    playerWrap.classList.remove("is-playing", "is-paused", "is-muted");
+    playerWrap.classList.remove("is-playing", "is-paused", "is-muted", "ui-on");
     playerError.hidden = true;
     playerError.textContent = "";
     playerCover.hidden = true;
@@ -918,6 +888,7 @@ let FILMS = [];
     playerCover.hidden = true;
     playerError.hidden = true;
     playerHost.textContent = "";
+    playerWrap.classList.add("ui-on");
 
     const wrap = makeEl("div", "player-external");
     wrap.appendChild(makeEl("p", "player-external-text", "Video ini diputar lewat Google Drive."));
@@ -952,6 +923,7 @@ let FILMS = [];
     controls.hidden = true;
     playerSurface.hidden = true;
     playerCover.hidden = true;
+    playerWrap.classList.add("ui-on");
 
     const iframe = document.createElement("iframe");
     iframe.src = src;
@@ -965,9 +937,23 @@ let FILMS = [];
     playerHost.appendChild(buildDriveLinkBlocker());
   }
 
+  function lockIframe() {
+    try {
+      const frame = player.yt.getIframe();
+      frame.tabIndex = -1;
+      frame.style.pointerEvents = "none";
+      frame.setAttribute("aria-hidden", "true");
+      frame.removeAttribute("title");
+    } catch (e) {
+      return;
+    }
+  }
+
   function onPlayerReady(session) {
     if (session !== player.session) return;
     player.ready = true;
+    lockIframe();
+    showUi();
     syncVolume();
     updateProgress();
     player.timer = setInterval(updateProgress, PROGRESS_INTERVAL_MS);
@@ -988,6 +974,7 @@ let FILMS = [];
     } else if (st === YT_PAUSED) {
       setPlaying(false);
       playerWrap.classList.add("is-paused");
+      showUi();
     } else if (st === YT_ENDED) {
       setPlaying(false);
       playerWrap.classList.remove("is-paused");
@@ -1060,6 +1047,7 @@ let FILMS = [];
     }
 
     modal.hidden = false;
+    playerWrap.classList.add("ui-on");
     document.body.classList.add("no-scroll");
 
     const targetHash = "#film-" + encodeURIComponent(film.id);
@@ -1299,6 +1287,26 @@ let FILMS = [];
     else onPlayerKey(e);
   });
 
+  playerWrap.addEventListener("contextmenu", (e) => e.preventDefault());
+  playerWrap.addEventListener("mousemove", showUi);
+  playerWrap.addEventListener("pointerdown", showUi);
+  playerWrap.addEventListener("focusin", showUi);
+  playerWrap.addEventListener("mouseleave", () => {
+    player.uiHover = false;
+    hideUi();
+  });
+  [$(".modal-bar"), controls].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("mouseenter", () => {
+      player.uiHover = true;
+      showUi();
+    });
+    el.addEventListener("mouseleave", () => {
+      player.uiHover = false;
+      showUi();
+    });
+  });
+
   playerSurface.addEventListener("click", togglePlay);
   playerSurface.addEventListener("dblclick", toggleFullscreen);
   btnPlay.addEventListener("click", togglePlay);
@@ -1412,7 +1420,7 @@ let FILMS = [];
         let films = readSheetCache();
         if (!films) {
           films = await loadFromSheet();
-          await fillTitles(films);
+          fillTitles(films);
           writeSheetCache(films);
         }
         FILMS = sortFilms(films, "newest");

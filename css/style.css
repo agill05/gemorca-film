@@ -2319,3 +2319,137 @@ button {
     justify-content: space-between;
   }
 }
+
+/* ===== Pemutar gaya Google Drive: overlay judul + kontrol, tampil saat kursor di atas video ===== */
+.player-wrap {
+  position: relative;
+}
+
+.player {
+  --yt-strip: 0px;
+}
+
+.player-host iframe {
+  pointer-events: none;
+}
+
+.player-wrap .modal-bar,
+.player-wrap .controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.player-wrap.ui-on .modal-bar,
+.player-wrap.ui-on .controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.player-wrap.is-playing:not(.ui-on) {
+  cursor: none;
+}
+
+.player-wrap .modal-bar {
+  top: 0;
+  padding: 0.75rem 0.75rem 1.75rem 1.25rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.92) 0, rgba(0, 0, 0, 0.92) 60%, rgba(0, 0, 0, 0));
+}
+
+.player-wrap .modal-bar h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.player-wrap .modal-close,
+.player-wrap .modal-fav,
+.player-wrap .modal-share {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+}
+
+.player-wrap .modal-close:hover,
+.player-wrap .modal-fav:hover,
+.player-wrap .modal-share:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.player-wrap .modal-fav.is-fav {
+  color: var(--accent-strong);
+}
+
+.player-wrap .controls {
+  bottom: 0;
+  flex-wrap: wrap;
+  gap: 0 0.25rem;
+  padding: 1.75rem 0.75rem 0.25rem;
+  border-top: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 0, rgba(0, 0, 0, 0.92) 60%, rgba(0, 0, 0, 0));
+}
+
+.player-wrap .seek {
+  order: -1;
+  flex: 0 0 100%;
+  height: 1.25rem;
+}
+
+.player-wrap .ctrl {
+  width: 40px;
+  height: 40px;
+  color: #fff;
+}
+
+.player-wrap .time {
+  margin-right: auto;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.player-wrap .seek::-webkit-slider-runnable-track,
+.player-wrap .volume::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, var(--accent-strong) var(--progress), rgba(255, 255, 255, 0.3) var(--progress));
+}
+
+.player-wrap .seek::-moz-range-track,
+.player-wrap .volume::-moz-range-track {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.player-wrap .seek::-moz-range-progress,
+.player-wrap .volume::-moz-range-progress {
+  background: var(--accent-strong);
+}
+
+.player-wrap .seek::-webkit-slider-thumb,
+.player-wrap .volume::-webkit-slider-thumb {
+  box-shadow: none;
+}
+
+.player-wrap .seek::-moz-range-thumb,
+.player-wrap .volume::-moz-range-thumb {
+  box-shadow: none;
+}
+
+@media (max-width: 599px) {
+  .player-wrap {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .player-wrap .modal-bar {
+    padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+  }
+}

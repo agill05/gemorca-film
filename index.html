@@ -21,7 +21,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=16">
 </head>
 
 <body>
@@ -145,35 +145,35 @@
   <div class="modal" id="playerModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
     <div class="modal-backdrop" data-close></div>
     <div class="modal-box">
-      <div class="modal-bar">
-        <h3 id="modalTitle"></h3>
-        <div class="modal-bar__actions">
-          <button type="button" class="modal-fav" id="modalFav" aria-label="Tambah ke favorit" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" aria-hidden="true">
-              <path
-                d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.3 4.5 5.8 4c2-.3 3.9.6 5 2.2.2.3.5.4.8.4s.6-.1.8-.4c1.1-1.6 3-2.5 5-2.2 3.5.5 5.3 3.8 3.8 7.3-2.5 4.6-10 9.2-10 9.2z" />
-            </svg>
-          </button>
-          <button type="button" class="modal-share" id="modalShare" aria-label="Bagikan film">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" aria-hidden="true">
-              <circle cx="18" cy="5" r="3" />
-              <circle cx="6" cy="12" r="3" />
-              <circle cx="18" cy="19" r="3" />
-              <line x1="8.6" y1="10.5" x2="15.4" y2="6.5" />
-              <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
-            </svg>
-          </button>
-          <button type="button" class="modal-close" id="modalClose" aria-label="Tutup pemutar video">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-              aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </div>
-      </div>
       <div class="player-wrap" id="playerWrap">
+        <div class="modal-bar">
+          <h3 id="modalTitle"></h3>
+          <div class="modal-bar__actions">
+            <button type="button" class="modal-fav" id="modalFav" aria-label="Tambah ke favorit" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <path
+                  d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.3 4.5 5.8 4c2-.3 3.9.6 5 2.2.2.3.5.4.8.4s.6-.1.8-.4c1.1-1.6 3-2.5 5-2.2 3.5.5 5.3 3.8 3.8 7.3-2.5 4.6-10 9.2-10 9.2z" />
+              </svg>
+            </button>
+            <button type="button" class="modal-share" id="modalShare" aria-label="Bagikan film">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.6" y1="10.5" x2="15.4" y2="6.5" />
+                <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+              </svg>
+            </button>
+            <button type="button" class="modal-close" id="modalClose" aria-label="Tutup pemutar video">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </div>
+        </div>
         <div class="player">
           <div class="player-host" id="playerHost"></div>
           <button type="button" class="player-surface" id="playerSurface" aria-label="Putar atau jeda video">
@@ -236,8 +236,8 @@
     </div>
   </div>
 
-  <script src="js/script.js?v=15"></script>
-  <script src="js/status.js?v=15"></script>
+  <script src="js/script.js?v=16"></script>
+  <script src="js/status.js?v=16"></script>
 
   <div class="admin-modal" id="adminModal" hidden>
   <div class="admin-modal__backdrop" data-admin-close></div>
@@ -411,7 +411,7 @@
 </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <script src="js/admin.js?v=15"></script>
+  <script src="js/admin.js?v=16"></script>
 </body>
 
 </html>
