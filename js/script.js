@@ -48,7 +48,11 @@ let FILMS = [];
   const modalInfo = $(".modal-info");
   const modalRelated = $("#modalRelated");
   const relatedList = $("#relatedList");
-  const installBtn = $("#installBtn");
+  const navInstall = $("#navInstall");
+  const installCard = $("#installCard");
+  const installDesc = $("#installDesc");
+  const installCardBtn = $("#installCardBtn");
+  const installClose = $("#installClose");
 
   const ALL_GENRES = "Semua";
   const FAVORITE_GENRE = "__FAVORITE__";
@@ -60,6 +64,7 @@ let FILMS = [];
   const VIEWS_CACHE_KEY = "gemorcafilm_views_cache";
   const VIEWED_KEY = "gemorcafilm_viewed";
   const RELATED_MAX = 6;
+  const INSTALL_DISMISSED_KEY = "gemorcafilm_install_dismissed";
   const REQUEST_TIMEOUT_MS = 6000;
   const SEEK_STEP_SECONDS = 10;
   const VOLUME_STEP = 10;
@@ -94,6 +99,7 @@ let FILMS = [];
   let soonTimer = null;
   let viewCounts = {};
   let installEvent = null;
+  let installed = false;
 
   function setText(el, text) {
     if (el) el.textContent = text;
@@ -1458,7 +1464,7 @@ let FILMS = [];
       try {
         sessionStorage.setItem(VIEWS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), views: viewCounts }));
       } catch (e) {
-        /* abaikan */
+        
       }
       ensurePopularOption();
       if (state.sort === "popular") renderGrid();
@@ -1483,13 +1489,13 @@ let FILMS = [];
     try {
       sessionStorage.setItem(VIEWED_KEY, JSON.stringify(seen));
     } catch (e) {
-      /* abaikan */
+      
     }
     viewCounts[key] = (viewCounts[key] || 0) + 1;
     try {
       sessionStorage.removeItem(VIEWS_CACHE_KEY);
     } catch (e) {
-      /* abaikan */
+      
     }
     fetch(STATS_URL + "?action=view&title=" + encodeURIComponent(film.judul), {
       mode: "no-cors",
@@ -1540,28 +1546,94 @@ let FILMS = [];
     });
   }
 
-  if (installBtn) {
+  function isStandalone() {
+    return (
+      installed ||
+      window.navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)
+    );
+  }
+
+  function isIos() {
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent || "") ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    );
+  }
+
+  function installDismissed() {
+    try {
+      return localStorage.getItem(INSTALL_DISMISSED_KEY) === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function refreshInstallUi() {
+    if (!navInstall || !installCard) return;
+    if (isStandalone()) {
+      navInstall.hidden = true;
+      installCard.hidden = true;
+      return;
+    }
+    const canPrompt = !!installEvent;
+    const ios = isIos();
+    navInstall.hidden = false;
+    installCardBtn.hidden = !canPrompt;
+    if (canPrompt) {
+      installDesc.textContent = "Buka lebih cepat dari layar utama, tampil layar penuh, tanpa mengetik alamat situs.";
+    } else if (ios) {
+      installDesc.textContent = "Ketuk ikon Bagikan di Safari, lalu pilih Tambah ke Layar Utama.";
+    } else {
+      installDesc.textContent = "Buka menu browser Anda, lalu pilih Instal aplikasi atau Tambahkan ke layar utama.";
+    }
+    installCard.hidden = installDismissed() || !(canPrompt || ios);
+  }
+
+  async function promptInstall() {
+    if (!installEvent) return;
+    const promptEvent = installEvent;
+    installEvent = null;
+    try {
+      promptEvent.prompt();
+      await promptEvent.userChoice;
+    } catch (e) {
+      
+    }
+    refreshInstallUi();
+  }
+
+  if (navInstall && installCard) {
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       installEvent = e;
-      installBtn.hidden = false;
-    });
-    installBtn.addEventListener("click", async () => {
-      if (!installEvent) return;
-      const promptEvent = installEvent;
-      installEvent = null;
-      installBtn.hidden = true;
-      try {
-        promptEvent.prompt();
-        await promptEvent.userChoice;
-      } catch (e) {
-        /* abaikan */
-      }
+      refreshInstallUi();
     });
     window.addEventListener("appinstalled", () => {
       installEvent = null;
-      installBtn.hidden = true;
+      installed = true;
+      refreshInstallUi();
     });
+    navInstall.addEventListener("click", () => {
+      if (installEvent) {
+        promptInstall();
+        return;
+      }
+      refreshInstallUi();
+      installCard.hidden = false;
+      const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      installCard.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "center" });
+    });
+    installCardBtn.addEventListener("click", promptInstall);
+    installClose.addEventListener("click", () => {
+      try {
+        localStorage.setItem(INSTALL_DISMISSED_KEY, "1");
+      } catch (e) {
+        
+      }
+      installCard.hidden = true;
+    });
+    refreshInstallUi();
   }
 
   sortSelect.addEventListener("change", () => {

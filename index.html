@@ -21,7 +21,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=18">
 </head>
 
 <body>
@@ -37,6 +37,7 @@
         <a href="#top" class="nav-link" data-home>Beranda</a>
         <a href="#film" class="nav-link">Film</a>
         <a href="#genre" class="nav-link" id="navGenre">Genre</a>
+        <button type="button" class="nav-link nav-install" id="navInstall" hidden>Pasang Aplikasi</button>
       </nav>
 
       <div class="search" role="search">
@@ -50,8 +51,6 @@
           aria-controls="searchSuggest">
         <ul class="search-suggest" id="searchSuggest" role="listbox" hidden></ul>
       </div>
-
-      <button type="button" class="btn btn-ghost install-btn" id="installBtn" hidden>Pasang aplikasi</button>
     </div>
   </header>
 
@@ -106,6 +105,17 @@
       </div>
     </section>
   </main>
+
+  <section class="install-card" id="installCard" aria-labelledby="installTitle" hidden>
+    <div class="container install-card__inner">
+      <div class="install-card__text">
+        <h2 class="install-card__title" id="installTitle">Pasang Gemorca Film di layar utama</h2>
+        <p class="install-card__desc" id="installDesc"></p>
+      </div>
+      <button type="button" class="btn btn-primary install-card__btn" id="installCardBtn" hidden>Pasang sekarang</button>
+      <button type="button" class="install-card__close" id="installClose" aria-label="Tutup ajakan pasang aplikasi">&times;</button>
+    </div>
+  </section>
 
   <footer class="site-footer">
     <div class="container footer-inner">
@@ -242,8 +252,8 @@
     </div>
   </div>
 
-  <script src="js/script.js?v=17"></script>
-  <script src="js/status.js?v=17"></script>
+  <script src="js/script.js?v=18"></script>
+  <script src="js/status.js?v=18"></script>
 
   <div class="admin-modal" id="adminModal" hidden>
   <div class="admin-modal__backdrop" data-admin-close></div>
