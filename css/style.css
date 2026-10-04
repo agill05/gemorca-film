@@ -2320,17 +2320,12 @@ button {
   }
 }
 
-/* ===== Pemutar gaya Google Drive: overlay judul + kontrol, tampil saat kursor di atas video ===== */
 .player-wrap {
   position: relative;
 }
 
 .player {
   --yt-strip: 0px;
-}
-
-.player-host iframe {
-  pointer-events: none;
 }
 
 .player-wrap .modal-bar,
