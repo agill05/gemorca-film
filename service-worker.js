@@ -2,9 +2,9 @@ const CACHE_NAME = "gemorca-film-v17";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
-  "./css/style.css?v=16",
-  "./js/script.js?v=16",
-  "./js/status.js?v=16",
+  "./css/style.css?v=17",
+  "./js/script.js?v=17",
+  "./js/status.js?v=17",
   "./manifest.json",
   "./assets/img/icon-192.png",
   "./assets/img/icon-512.png"

@@ -45,12 +45,21 @@ let FILMS = [];
   const btnMute = $("#btnMute");
   const volumeBar = $("#volumeBar");
   const btnFullscreen = $("#btnFullscreen");
+  const modalInfo = $(".modal-info");
+  const modalRelated = $("#modalRelated");
+  const relatedList = $("#relatedList");
+  const installBtn = $("#installBtn");
 
   const ALL_GENRES = "Semua";
   const FAVORITE_GENRE = "__FAVORITE__";
   const FAVORITES_KEY = "gemorcafilm_favorites";
   const SHEET_CACHE_KEY = "gemorcafilm_sheet_cache";
-  const SHEET_CACHE_TTL_MS = 0;
+  const SHEET_CACHE_TTL_MS = 5 * 60 * 1000;
+  const STATS_URL =
+    "https://script.google.com/macros/s/AKfycbxND3fmB7zqrahAH1a1Afi-HDMIbDoCPOk75Sj0soPJX5xaz4hKSALFFhaJGHC1hKctyg/exec";
+  const VIEWS_CACHE_KEY = "gemorcafilm_views_cache";
+  const VIEWED_KEY = "gemorcafilm_viewed";
+  const RELATED_MAX = 6;
   const REQUEST_TIMEOUT_MS = 6000;
   const SEEK_STEP_SECONDS = 10;
   const VOLUME_STEP = 10;
@@ -83,6 +92,8 @@ let FILMS = [];
   let lastFocused = null;
   let ytApiPromise = null;
   let soonTimer = null;
+  let viewCounts = {};
+  let installEvent = null;
 
   function setText(el, text) {
     if (el) el.textContent = text;
@@ -859,6 +870,7 @@ let FILMS = [];
     player.seeking = false;
     player.film = null;
     playerHost.textContent = "";
+    playerHost.classList.remove("is-yt");
     playerWrap.classList.remove("is-playing", "is-paused", "is-muted", "ui-on");
     playerError.hidden = true;
     playerError.textContent = "";
@@ -996,6 +1008,7 @@ let FILMS = [];
 
   async function startYouTube(film, videoId, session) {
     setCover("loading");
+    playerHost.classList.add("is-yt");
     let api;
     try {
       api = await loadYouTubeApi();
@@ -1031,20 +1044,26 @@ let FILMS = [];
   }
 
   function openModal(film) {
-    lastFocused = document.activeElement;
+    if (modal.hidden) lastFocused = document.activeElement;
     teardownPlayer();
     player.film = film;
+    trackView(film);
 
     $("#modalTitle").textContent = film.judul;
     modalDesc.textContent = film.deskripsi || "";
     modalDesc.hidden = !film.deskripsi;
-    const metaText = [film.genre, film.tahun].filter(Boolean).join(" \u2022 ");
+    const views = viewsOf(film);
+    const viewsText = views > 0 ? views.toLocaleString("id-ID") + " tayangan" : "";
+    const metaText = [film.genre, film.tahun, viewsText].filter(Boolean).join(" \u2022 ");
     modalMeta.textContent = metaText;
     modalMeta.hidden = !metaText;
     if (modalFav) {
       modalFav.dataset.favId = film.id;
       setFavButtonState(modalFav, isFavorite(film.id));
     }
+
+    renderRelated(film);
+    if (modalInfo) modalInfo.scrollTop = 0;
 
     modal.hidden = false;
     playerWrap.classList.add("ui-on");
@@ -1363,6 +1382,10 @@ let FILMS = [];
   function compareFilms(mode) {
     return (a, b) => {
       if (mode === "az") return titleCollator.compare(a.judul, b.judul) || a.id - b.id;
+      if (mode === "popular") {
+        const diff = viewsOf(b) - viewsOf(a);
+        if (diff !== 0) return diff;
+      }
       const ya = yearOf(a);
       const yb = yearOf(b);
       if (ya !== yb) {
@@ -1376,6 +1399,169 @@ let FILMS = [];
 
   function sortFilms(films, mode) {
     return films.slice().sort(compareFilms(mode));
+  }
+
+  function viewKey(film) {
+    return String(film && film.judul ? film.judul : "").trim().toLowerCase();
+  }
+
+  function viewsOf(film) {
+    return viewCounts[viewKey(film)] || 0;
+  }
+
+  function normalizeViews(raw) {
+    const out = {};
+    if (!raw || typeof raw !== "object") return out;
+    Object.keys(raw).forEach((k) => {
+      const n = Number(raw[k]);
+      if (Number.isFinite(n) && n > 0) out[String(k).trim().toLowerCase()] = n;
+    });
+    return out;
+  }
+
+  function ensurePopularOption() {
+    if (!sortSelect || sortSelect.querySelector('option[value="popular"]')) return;
+    const hasViews = Object.keys(viewCounts).length > 0;
+    if (!hasViews) return;
+    const opt = document.createElement("option");
+    opt.value = "popular";
+    opt.textContent = "Terpopuler";
+    sortSelect.insertBefore(opt, sortSelect.firstChild);
+  }
+
+  async function loadViews() {
+    try {
+      const raw = sessionStorage.getItem(VIEWS_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Date.now() - parsed.savedAt < SHEET_CACHE_TTL_MS) {
+          viewCounts = normalizeViews(parsed.views);
+          ensurePopularOption();
+          return;
+        }
+      }
+    } catch (e) {
+      viewCounts = {};
+    }
+
+    const controller = "AbortController" in window ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
+    try {
+      const res = await fetch(STATS_URL + "?action=views", {
+        cache: "no-store",
+        signal: controller ? controller.signal : undefined
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (!data || data.ok === false) throw new Error("Respons views tidak valid");
+      viewCounts = normalizeViews(data.views);
+      try {
+        sessionStorage.setItem(VIEWS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), views: viewCounts }));
+      } catch (e) {
+        /* abaikan */
+      }
+      ensurePopularOption();
+      if (state.sort === "popular") renderGrid();
+    } catch (err) {
+      console.warn("Data tayangan tidak tersedia.", err);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  function trackView(film) {
+    const key = viewKey(film);
+    if (!key) return;
+    let seen = [];
+    try {
+      seen = JSON.parse(sessionStorage.getItem(VIEWED_KEY) || "[]");
+    } catch (e) {
+      seen = [];
+    }
+    if (seen.includes(key)) return;
+    seen.push(key);
+    try {
+      sessionStorage.setItem(VIEWED_KEY, JSON.stringify(seen));
+    } catch (e) {
+      /* abaikan */
+    }
+    viewCounts[key] = (viewCounts[key] || 0) + 1;
+    try {
+      sessionStorage.removeItem(VIEWS_CACHE_KEY);
+    } catch (e) {
+      /* abaikan */
+    }
+    fetch(STATS_URL + "?action=view&title=" + encodeURIComponent(film.judul), {
+      mode: "no-cors",
+      keepalive: true
+    }).catch(() => { });
+  }
+
+  function relatedFilms(film) {
+    const genres = splitGenre(film.genre).map((g) => g.toLowerCase());
+    if (!genres.length) return [];
+    const newest = compareFilms("newest");
+    return FILMS.filter((f) => f.id !== film.id && !f.segera && f.videoEmbedUrl)
+      .map((f) => {
+        const shared = splitGenre(f.genre).filter((g) => genres.includes(g.toLowerCase())).length;
+        return { film: f, shared: shared };
+      })
+      .filter((x) => x.shared > 0)
+      .sort((a, b) => b.shared - a.shared || newest(a.film, b.film))
+      .slice(0, RELATED_MAX)
+      .map((x) => x.film);
+  }
+
+  function renderRelated(film) {
+    if (!modalRelated || !relatedList) return;
+    const films = relatedFilms(film);
+    relatedList.replaceChildren();
+    modalRelated.hidden = films.length === 0;
+    films.forEach((f) => {
+      const li = document.createElement("li");
+      const btn = makeEl("button", "related-item");
+      btn.type = "button";
+      btn.setAttribute("aria-label", "Tonton " + f.judul);
+      const poster = makeEl("div", "related-poster");
+      const src = f.posterUrl || f.bannerUrl;
+      if (src) {
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        poster.appendChild(img);
+      }
+      btn.appendChild(poster);
+      btn.appendChild(makeEl("span", "related-name", f.judul));
+      btn.addEventListener("click", () => openModal(f));
+      li.appendChild(btn);
+      relatedList.appendChild(li);
+    });
+  }
+
+  if (installBtn) {
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      installEvent = e;
+      installBtn.hidden = false;
+    });
+    installBtn.addEventListener("click", async () => {
+      if (!installEvent) return;
+      const promptEvent = installEvent;
+      installEvent = null;
+      installBtn.hidden = true;
+      try {
+        promptEvent.prompt();
+        await promptEvent.userChoice;
+      } catch (e) {
+        /* abaikan */
+      }
+    });
+    window.addEventListener("appinstalled", () => {
+      installEvent = null;
+      installBtn.hidden = true;
+    });
   }
 
   sortSelect.addEventListener("change", () => {
@@ -1435,6 +1621,7 @@ let FILMS = [];
     renderGrid();
     startSoonCountdown();
     applyHashRoute();
+    loadViews();
   }
 
   init();

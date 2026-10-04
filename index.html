@@ -50,6 +50,8 @@
           aria-controls="searchSuggest">
         <ul class="search-suggest" id="searchSuggest" role="listbox" hidden></ul>
       </div>
+
+      <button type="button" class="btn btn-ghost install-btn" id="installBtn" hidden>Pasang aplikasi</button>
     </div>
   </header>
 
@@ -232,6 +234,10 @@
       <div class="modal-info">
         <p class="modal-meta" id="modalMeta"></p>
         <p class="modal-desc" id="modalDesc"></p>
+        <section class="related" id="modalRelated" aria-labelledby="relatedTitle" hidden>
+          <h4 class="related-title" id="relatedTitle">Film serupa</h4>
+          <ul class="related-list" id="relatedList"></ul>
+        </section>
       </div>
     </div>
   </div>
@@ -411,7 +417,7 @@
 </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <script src="js/admin.js?v=17"></script>
+  <script src="js/admin.js?v=16"></script>
 </body>
 
 </html>

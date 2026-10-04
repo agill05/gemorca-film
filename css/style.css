@@ -2320,12 +2320,17 @@ button {
   }
 }
 
+/* ===== Pemutar gaya Google Drive: overlay judul + kontrol, tampil saat kursor di atas video ===== */
 .player-wrap {
   position: relative;
 }
 
 .player {
   --yt-strip: 0px;
+}
+
+.player-host.is-yt iframe {
+  pointer-events: none;
 }
 
 .player-wrap .modal-bar,
@@ -2447,4 +2452,85 @@ button {
   .player-wrap .modal-bar {
     padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
   }
+}
+
+/* ===== Film serupa ===== */
+.related {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.related-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.related-list {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0 0 0.5rem;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.related-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 7.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.related-poster {
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, var(--surface-2), var(--surface));
+}
+
+.related-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.related-item:hover .related-poster img,
+.related-item:focus-visible .related-poster img {
+  transform: scale(1.05);
+}
+
+.related-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* ===== Tombol pasang aplikasi ===== */
+.install-btn {
+  order: 2;
+  flex: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+body.is-maintenance .install-btn {
+  display: none;
 }
