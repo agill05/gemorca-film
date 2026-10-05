@@ -611,13 +611,23 @@ button {
 
 .card-skeleton {
   pointer-events: none;
+  cursor: default;
 }
 
+.card-skeleton,
+.skel-chip {
+  --skel-bg: linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 50%, var(--surface) 70%);
+}
+
+/* Heights match real text lines (title 0.95rem x 1.3, meta 0.8rem x 1.5) to avoid layout shift. */
 .skel-line {
   display: block;
+  box-sizing: content-box;
   height: 0.85rem;
+  padding: 0.19rem 0;
   border-radius: 4px;
-  background: linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 50%, var(--surface) 70%);
+  background: var(--skel-bg);
+  background-clip: content-box;
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
@@ -630,9 +640,43 @@ button {
 .skel-line--sm {
   height: 0.7rem;
   width: 40%;
+  padding: 0.25rem 0;
 }
 
 .card-skeleton .card-poster {
+  background: var(--skel-bg);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.chip.skel-chip {
+  height: 2.1rem;
+  padding: 0;
+  border-color: transparent;
+  background: var(--skel-bg);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel-line,
+  .skel-chip,
+  .card-skeleton .card-poster {
+    animation: none;
+  }
+}
+
+.card-poster {
   background: linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 50%, var(--surface) 70%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;

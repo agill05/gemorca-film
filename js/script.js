@@ -1648,11 +1648,18 @@ let FILMS = [];
   if ("ResizeObserver" in window) new ResizeObserver(syncHeaderHeight).observe(header);
   else window.addEventListener("resize", syncHeaderHeight);
 
-  function renderSkeletonGrid(count) {
+  function skeletonCount() {
+    const cols = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length || 2;
+    return Math.min(Math.max(cols * 2, 4), 12);
+  }
+
+  function renderSkeletonGrid() {
     grid.hidden = false;
     emptyState.hidden = true;
-    const skeletons = Array.from({ length: count }, () => {
+    grid.setAttribute("aria-busy", "true");
+    const skeletons = Array.from({ length: skeletonCount() }, () => {
       const card = makeEl("div", "card card-skeleton");
+      card.setAttribute("aria-hidden", "true");
       card.appendChild(makeEl("div", "card-poster"));
       card.appendChild(makeEl("span", "card-title skel-line"));
       const meta = makeEl("div", "card-meta");
@@ -1664,6 +1671,17 @@ let FILMS = [];
     grid.replaceChildren(...skeletons);
   }
 
+  function renderChipSkeleton() {
+    chipsBox.setAttribute("aria-hidden", "true");
+    chipsBox.replaceChildren(
+      ...[5, 4, 6, 4, 5].map((rem) => {
+        const chip = makeEl("span", "chip skel-chip");
+        chip.style.width = rem + "rem";
+        return chip;
+      })
+    );
+  }
+
   async function init() {
     $("#year").textContent = new Date().getFullYear();
     onScroll();
@@ -1673,9 +1691,12 @@ let FILMS = [];
       hero.hidden = true;
       document.body.classList.add("no-hero");
       resultCount.textContent = "";
-      renderSkeletonGrid(8);
+      let films = readSheetCache();
+      if (!films) {
+        renderChipSkeleton();
+        renderSkeletonGrid();
+      }
       try {
-        let films = readSheetCache();
         if (!films) {
           films = await loadFromSheet();
           fillTitles(films);
@@ -1685,6 +1706,9 @@ let FILMS = [];
       } catch (err) {
         state.loadFailed = true;
         console.warn("Gagal memuat Google Sheet.", err);
+      } finally {
+        grid.removeAttribute("aria-busy");
+        chipsBox.removeAttribute("aria-hidden");
       }
     }
 
